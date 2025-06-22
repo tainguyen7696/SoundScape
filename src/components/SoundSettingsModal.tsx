@@ -9,6 +9,7 @@ import {
     View,
     StyleSheet,
     Text,
+    Switch,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { useTheme } from '../theme';
@@ -18,10 +19,10 @@ interface Props {
     title: string;
     volume: number;
     soften: number;
-    oscillate: number;
+    oscillate: boolean;
     onVolumeChange: (v: number) => void;
     onSoftenChange: (v: number) => void;
-    onOscillateChange: (v: number) => void;
+    onOscillateChange: (on: boolean) => void;
     onClose: () => void;
 }
 
@@ -44,7 +45,6 @@ const SoundSettingsModal: React.FC<Props> = ({
     const panY = useRef(new Animated.Value(closedY)).current;
     const [show, setShow] = useState(false);
 
-    // PanResponder for drag-down:
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
@@ -66,7 +66,6 @@ const SoundSettingsModal: React.FC<Props> = ({
         })
     ).current;
 
-    // show/hide animations
     useEffect(() => {
         if (visible) {
             setShow(true);
@@ -92,20 +91,12 @@ const SoundSettingsModal: React.FC<Props> = ({
 
     if (!show) return null;
 
-    const rows = [
-        { label: 'Volume', value: volume, onChange: onVolumeChange },
-        { label: 'Soften', value: soften, onChange: onSoftenChange },
-        { label: 'Oscillate', value: oscillate, onChange: onOscillateChange },
-    ];
-
     return (
         <Modal transparent visible animationType="none">
-            {/* Backdrop */}
             <TouchableWithoutFeedback onPress={hide}>
                 <View style={styles.overlay} />
             </TouchableWithoutFeedback>
 
-            {/* Sheet */}
             <Animated.View
                 {...panResponder.panHandlers}
                 style={[
@@ -116,30 +107,52 @@ const SoundSettingsModal: React.FC<Props> = ({
                     },
                 ]}
             >
-                {/* Drag handle */}
                 <View style={[styles.handle, { backgroundColor: theme.sliderTrack }]} />
 
                 <Text style={[styles.header, { color: theme.text }]}>
                     {title}
                 </Text>
 
-                {rows.map(({ label, value, onChange }) => (
-                    <View style={styles.row} key={label}>
-                        <Text style={[styles.label, { color: theme.text }]}>
-                            {label}
-                        </Text>
-                        <Slider
-                            style={styles.slider}
-                            minimumValue={0}
-                            maximumValue={1}
-                            value={value}
-                            onValueChange={onChange}
-                            minimumTrackTintColor={theme.primary}
-                            maximumTrackTintColor={theme.sliderTrack}
-                            thumbTintColor={theme.sliderThumb}
-                        />
-                    </View>
-                ))}
+                {/* Volume Slider */}
+                <View style={styles.row}>
+                    <Text style={[styles.label, { color: theme.text }]}>Volume</Text>
+                    <Slider
+                        style={styles.slider}
+                        minimumValue={0}
+                        maximumValue={1}
+                        value={volume}
+                        onValueChange={onVolumeChange}
+                        minimumTrackTintColor={theme.primary}
+                        maximumTrackTintColor={theme.sliderTrack}
+                        thumbTintColor={theme.sliderThumb}
+                    />
+                </View>
+
+                {/* Soften Slider */}
+                <View style={styles.row}>
+                    <Text style={[styles.label, { color: theme.text }]}>Soften</Text>
+                    <Slider
+                        style={styles.slider}
+                        minimumValue={0}
+                        maximumValue={1}
+                        value={soften}
+                        onValueChange={onSoftenChange}
+                        minimumTrackTintColor={theme.primary}
+                        maximumTrackTintColor={theme.sliderTrack}
+                        thumbTintColor={theme.sliderThumb}
+                    />
+                </View>
+
+                {/* Oscillate Toggle */}
+                <View style={styles.row}>
+                    <Text style={[styles.label, { color: theme.text }]}>Oscillate</Text>
+                    <Switch
+                        value={oscillate}
+                        onValueChange={onOscillateChange}
+                        trackColor={{ true: theme.primary, false: theme.sliderTrack }}
+                        thumbColor={oscillate ? theme.sliderThumb : theme.sliderThumb}
+                    />
+                </View>
             </Animated.View>
         </Modal>
     );

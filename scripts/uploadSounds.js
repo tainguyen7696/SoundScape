@@ -55,7 +55,8 @@ async function uploadPair(baseName) {
     return { audio_url, background_image_url };
 }
 
-async function replaceRecord(baseName, urls) {
+// Replace your replaceRecord() with:
+async function upsertRecord(baseName, urls) {
     const record = {
         title: baseName,
         description: '',
@@ -63,29 +64,15 @@ async function replaceRecord(baseName, urls) {
         background_image_url: urls.background_image_url,
         tags: [],
         is_premium: false,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
     };
 
-    // 1) delete existing by title
-    const { error: delErr } = await supabase
-        .from(TABLE_NAME)
-        .delete()
-        .eq('title', baseName);
-    if (delErr) {
-        console.error(`❌ Failed to delete existing "${baseName}":`, delErr.message);
-        return;
-    }
+    const { error } = await supabase
+        .from('sounds')
+        .upsert(record, { onConflict: 'title' });
 
-    // 2) insert fresh record
-    const { error: insErr } = await supabase
-        .from(TABLE_NAME)
-        .insert(record);
-
-    if (insErr) {
-        console.error(`❌ Insert error for "${baseName}":`, insErr.message);
-    } else {
-        console.log(`✅ Replaced record for "${baseName}"`);
-    }
+    if (error) console.error('Upsert error:', error.message);
+    else console.log(`✅ Upserted "${baseName}"`);
 }
 
 (async () => {
@@ -109,7 +96,7 @@ async function replaceRecord(baseName, urls) {
         for (const baseName of baseNames) {
             const urls = await uploadPair(baseName);
             if (!urls) continue;
-            await replaceRecord(baseName, urls);
+            await upsertRecord(baseName, urls);
         }
 
         console.log('\n*** All done! ***');

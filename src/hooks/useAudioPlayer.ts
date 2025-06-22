@@ -5,80 +5,153 @@ import { Audio } from 'expo-av';
 export interface CurrentSound {
     audioUrl: string;
     settings: {
-        volume: number;       // 0.0 – 1.0
-        soften: number;       // 0.0 – 1.0 (TODO: implement real DSP)
-        oscillate: number;    // 0.0 – 1.0, amount to modulate volume
+        volume: number;     // 0.0â€“1.0
+        soften: number;     // TODO
+        oscillate: boolean; // on/off
     };
 }
 
-/**
- * Hook to load/play/pause a list of sounds with individual settings.
- * @param sounds   array of CurrentSound
- * @param isPlaying   whether playback should be running
- */
-export function useAudioPlayer(sounds: CurrentSound[], isPlaying: boolean) {
-    // refs to the loaded Audio.Sound instances
-    const playersRef = useRef<Audio.Sound[]>([]);
-    // refs to any oscillation intervals
-    const intervalsRef = useRef<NodeJS.Timeout[]>([]);
+export function useAudioPlayer(
+    sounds: CurrentSound[],
+    isPlaying: boolean,
+    masterVolume: number = 1
+) {
+    type Pair = { a: Audio.Sound; b: Audio.Sound; duration: number };
+    const playersRef = useRef<Pair[]>([]);
+    const timersRef = useRef<NodeJS.Timeout[]>([]);
 
-    // Whenever the sounds array changes, unload old and load new
+    // 1) Configure audio mode once
+    useEffect(() => {
+        Audio.setAudioModeAsync({
+            allowsRecordingIOS: false,
+            staysActiveInBackground: true,
+            interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+            playsInSilentModeIOS: true,
+            shouldDuckAndroid: false,
+            interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
+        });
+    }, []);
+
+    // 2) Load/unload on URL change
     useEffect(() => {
         let cancelled = false;
-        async function loadAll() {
-            // Unload previous
-            await Promise.all(playersRef.current.map(p => p.unloadAsync()));
+
+        (async () => {
+            // clear old timers & unload
+            timersRef.current.forEach(clearTimeout);
+            timersRef.current = [];
+            await Promise.all(
+                playersRef.current.flatMap(p => [p.a.unloadAsync(), p.b.unloadAsync()])
+            );
             playersRef.current = [];
-            intervalsRef.current.forEach(i => clearInterval(i));
-            intervalsRef.current = [];
 
-            // Load new
-            for (const s of sounds) {
-                const { sound } = await Audio.Sound.createAsync(
-                    { uri: s.audioUrl },
-                    { shouldPlay: false, volume: s.settings.volume }
+            for (let i = 0; i < sounds.length; i++) {
+                if (cancelled) break;
+                const { audioUrl, settings } = sounds[i];
+
+                // create first Sound, capture its status for duration
+                const { sound: a, status } = await Audio.Sound.createAsync(
+                    { uri: audioUrl },
+                    { volume: 0, isLooping: false }
                 );
-                playersRef.current.push(sound);
+                const duration = status.durationMillis ?? 0;
 
-                // set up oscillation if requested
-                if (s.settings.oscillate > 0) {
-                    const baseVol = s.settings.volume;
-                    const amp = s.settings.oscillate * baseVol;
-                    let phase = 0;
-                    const interval = setInterval(() => {
-                        phase = (phase + Math.PI / 30) % (2 * Math.PI);
-                        const v = baseVol + Math.sin(phase) * amp;
-                        sound.setStatusAsync({ volume: Math.max(0, Math.min(1, v)) });
-                    }, 100);
-                    intervalsRef.current.push(interval);
+                // create second Sound
+                const { sound: b } = await Audio.Sound.createAsync(
+                    { uri: audioUrl },
+                    { volume: 0, isLooping: false }
+                );
+
+                // store the pair + duration
+                playersRef.current[i] = { a, b, duration };
+
+                // if already playing, start its loop immediately
+                if (isPlaying) {
+                    startLoop(playersRef.current[i], settings);
                 }
             }
-        }
-
-        loadAll();
+        })();
 
         return () => {
             cancelled = true;
-            // cleanup on unmount
-            playersRef.current.forEach(p => p.unloadAsync());
-            intervalsRef.current.forEach(i => clearInterval(i));
+            timersRef.current.forEach(clearTimeout);
+            playersRef.current.flatMap(p => [p.a.unloadAsync(), p.b.unloadAsync()]);
+            playersRef.current = [];
         };
-    }, [sounds]);
+    }, [sounds.map(s => s.audioUrl).join('|')]);
 
-    // When isPlaying toggles, play or pause all
+    // 3) Crossâ€fade loop helper using stored duration
+    const startLoop = (pair: Pair, settings: CurrentSound['settings']) => {
+        const { a, b, duration } = pair;
+        if (duration <= 0) {
+            console.warn('Invalid duration, skipping loop');
+            return;
+        }
+
+        const overlap = Math.min(duration / 2, 10_000);
+        const baseVol = settings.volume * masterVolume;
+
+        const doLoop = () => {
+            // start A
+            a.setPositionAsync(0).then(() => a.playAsync());
+            a.setStatusAsync({ volume: baseVol });
+
+            // schedule B overlap
+            const t1 = setTimeout(() => {
+                b.setPositionAsync(0).then(() => b.playAsync());
+                const steps = 30;
+                for (let i = 1; i <= steps; i++) {
+                    const pct = i / steps;
+                    const fadeTimer = setTimeout(() => {
+                        a.setStatusAsync({ volume: baseVol * (1 - pct) });
+                        b.setStatusAsync({ volume: baseVol * pct });
+                    }, (overlap / steps) * i);
+                    timersRef.current.push(fadeTimer);
+                }
+            }, duration - overlap);
+
+            // schedule next iteration
+            const t2 = setTimeout(() => {
+                a.stopAsync();
+                if (isPlaying) doLoop();
+            }, duration);
+
+            timersRef.current.push(t1, t2);
+        };
+
+        doLoop();
+    };
+
+    // 4) Play / Pause effect (starts loops or stops them)
     useEffect(() => {
-        (async () => {
+        // clear any pending timers
+        timersRef.current.forEach(clearTimeout);
+        timersRef.current = [];
+
+        playersRef.current.forEach((pair, idx) => {
+            const settings = sounds[idx]?.settings;
+            if (!pair || !settings) return;
+
+            // stop both before toggling
+            pair.a.stopAsync();
+            pair.b.stopAsync();
+
             if (isPlaying) {
-                await Promise.all(playersRef.current.map(p => p.playAsync()));
-            } else {
-                await Promise.all(playersRef.current.map(p => p.pauseAsync()));
+                startLoop(pair, settings);
             }
-        })();
+        });
     }, [isPlaying]);
 
-    // If just the settings change (volume or oscillate) on existing sounds,
-    // you may want to rebuild or update statuses here. For simplicity,
-    // we assume the load-effect runs when settings change too.
+    // 5) Volume updates in-place
+    useEffect(() => {
+        playersRef.current.forEach((pair, idx) => {
+            const settings = sounds[idx]?.settings;
+            if (!pair || !settings) return;
+            const vol = settings.volume * masterVolume;
+            pair.a.setStatusAsync({ volume: vol });
+            pair.b.setStatusAsync({ volume: vol });
+        });
+    }, [sounds.map(s => s.settings.volume).join('|'), masterVolume]);
 
-    return null; // no UI
+    return null;
 }

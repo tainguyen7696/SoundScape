@@ -13,7 +13,15 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio",
+          "audio"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.tainguyen7696.soundscape"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,6 +32,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5a8a6b68-cb91-4ff3-bc44-586267f23fdd"
+      }
+    },
+    "owner": "tainguyen7696"
   }
 }

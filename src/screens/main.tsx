@@ -1,15 +1,16 @@
+// src/screens/Main.tsx
 import React, { useState, useEffect } from 'react';
 import {
     View,
     FlatList,
     StyleSheet,
     ActivityIndicator,
-    Alert,
-    ImageSourcePropType,
-    LayoutAnimation,
     Platform,
     UIManager,
+    LayoutAnimation,
+    ImageSourcePropType,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../components/Header';
 import Search from '../components/Search';
 import Card from '../components/Card';
@@ -21,7 +22,6 @@ import { useAudioPlayer, CurrentSound as AudioSound } from '../hooks/useAudioPla
 import { usePersistedCurrentSounds, PersistedSound } from '../hooks/usePersistedCurrentSounds';
 import { usePersistedFavorites } from '../hooks/usePersistedFavorites';
 import { useCachedSounds, CachedSound } from '../hooks/useCachedSounds';
-import { LinearGradient } from 'expo-linear-gradient';
 
 interface CurrentSound extends PersistedSound {
     backgroundImage: ImageSourcePropType | null;
@@ -46,6 +46,9 @@ export default function Main() {
     const [settingsVisible, setSettingsVisible] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
 
+    // global/master volume
+    const [masterVolume, setMasterVolume] = useState(1);
+
     const [persistedSounds, setPersistedSounds] = usePersistedCurrentSounds();
     const [favorites, setFavorites] = usePersistedFavorites();
 
@@ -54,12 +57,11 @@ export default function Main() {
         backgroundImage: s.backgroundImage ? { uri: s.backgroundImage } : null,
     }));
 
+    // audio hook with masterVolume
     useAudioPlayer(
-        currentSounds.map(s => ({
-            audioUrl: s.audioUrl,
-            settings: s.settings,
-        })) as AudioSound[],
-        isPlaying
+        currentSounds.map(s => ({ audioUrl: s.audioUrl, settings: s.settings })) as AudioSound[],
+        isPlaying,
+        masterVolume
     );
 
     if (loading) {
@@ -72,9 +74,9 @@ export default function Main() {
 
     const filtered = sounds
         .filter(s => s.title.toLowerCase().includes(searchText.toLowerCase()))
-        .filter((s, i) => {
-            if (category === 'Premium') return s.isPremium;
-            if (category === 'Recently added') return i < 10;
+        .filter((_, idx) => {
+            if (category === 'Premium') return sounds[idx].isPremium;
+            if (category === 'Recently added') return idx < 10;
             return true;
         });
 
@@ -97,7 +99,7 @@ export default function Main() {
                 title: sound.title,
                 audioUrl: sound.localAudio,
                 backgroundImage: sound.localImage,
-                settings: { volume: 1, soften: 0, oscillate: 0 },
+                settings: { volume: 1, soften: 0, oscillate: false },
             },
         ]);
     };
@@ -106,11 +108,11 @@ export default function Main() {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setPersistedSounds(prev => {
             const next = prev.filter((_, i) => i !== idx);
-            if (selectedIndex === idx) setSelectedIndex(null);
-            else if (selectedIndex !== null && selectedIndex > idx)
-                setSelectedIndex(selectedIndex - 1);
             return next;
         });
+        if (selectedIndex === idx) setSelectedIndex(null);
+        else if (selectedIndex !== null && selectedIndex > idx)
+            setSelectedIndex(selectedIndex - 1);
     };
 
     return (
@@ -122,67 +124,56 @@ export default function Main() {
                 onSettingsPress={() => { }}
             />
 
-            <FlatList
-                data={filtered}
-                keyExtractor={(_, i) => i.toString()}
-                renderItem={({ item, index }) => (
-                    <View style={styles.cardWrapper}>
-                        <Card
-                            title={item.title}
-                            backgroundImage={item.localImage ? { uri: item.localImage } : null}
-                            isFavorite={favorites.includes(item.title)}
-                            selected={currentSounds.some(cs => cs.title === item.title)}
-                            onFavoriteToggle={() => handleFavoriteToggle(index)}
-                            onPlay={() => handleSelect(index)}
+            <View style={styles.wrapper}>
+                <FlatList
+                    data={filtered}
+                    keyExtractor={(_, i) => i.toString()}
+                    renderItem={({ item, index }) => (
+                        <View style={styles.cardWrapper}>
+                            <Card
+                                title={item.title}
+                                backgroundImage={item.localImage ? { uri: item.localImage } : null}
+                                isFavorite={favorites.includes(item.title)}
+                                selected={currentSounds.some(cs => cs.title === item.title)}
+                                onFavoriteToggle={() => handleFavoriteToggle(index)}
+                                onPlay={() => handleSelect(index)}
+                            />
+                        </View>
+                    )}
+                    contentContainerStyle={styles.listContent}
+                    ListHeaderComponent={
+                        <Search
+                            value={searchText}
+                            onChangeText={setSearchText}
+                            placeholder="Search sounds…"
                         />
-                    </View>
-                )}
-                contentContainerStyle={styles.listContent}
-                ListHeaderComponent={
-                    <Search
-                        value={searchText}
-                        onChangeText={setSearchText}
-                        placeholder="Search sounds…"
-                    />
-                }
-            />
+                    }
+                />
 
-            {/* FADE OVER THE BOTTOM OF THE LIST */}
-            <LinearGradient
-                colors={['transparent', theme.background]}
-                start={[0, 0]}
-                end={[0, 1]}
-                style={styles.bottomFade}
-                pointerEvents="none"
-            />
+                {/* bottom fade over list */}
+                {currentSounds.length > 0 && (
+                <LinearGradient
+                    colors={['transparent', theme.background]}
+                    start={[0, 0]}
+                    end={[0, 1]}
+                    style={styles.bottomFade}
+                    pointerEvents="none"
+                    />)}
 
-            <CurrentSounds
-                sounds={currentSounds}
-                onPress={i => {
-                    setSelectedIndex(i);
-                    setSettingsVisible(true);
-                }}
-                onRemove={handleRemoveCurrent}
-            />
+                <CurrentSounds
+                    sounds={currentSounds}
+                    onPress={i => { setSelectedIndex(i); setSettingsVisible(true); }}
+                    onRemove={handleRemoveCurrent}
+                />
+            </View>
 
             {currentSounds.length > 0 && (
                 <View style={styles.controlsContainer}>
                     <Controls
                         isPlaying={isPlaying}
                         onPlayPause={() => setIsPlaying(p => !p)}
-                        volume={
-                            selectedIndex !== null
-                                ? currentSounds[selectedIndex].settings.volume
-                                : 1
-                        }
-                        onVolumeChange={v => {
-                            if (selectedIndex === null) return;
-                            setPersistedSounds(prev => {
-                                const copy = [...prev];
-                                copy[selectedIndex].settings.volume = v;
-                                return copy;
-                            });
-                        }}
+                        volume={masterVolume}
+                        onVolumeChange={setMasterVolume}
                     />
                 </View>
             )}
@@ -218,10 +209,7 @@ export default function Main() {
                             return copy;
                         });
                     }}
-                    onClose={() => {
-                        setSettingsVisible(false);
-                        setSelectedIndex(null);
-                    }}
+                    onClose={() => { setSettingsVisible(false); setSelectedIndex(null); }}
                 />
             )}
         </View>
@@ -230,6 +218,7 @@ export default function Main() {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
+    wrapper: { flex: 1, position: 'relative' },
     listContent: {
         padding: 8,
         paddingTop: 16,
@@ -242,23 +231,12 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
     },
-    wrapper: {
-        flex: 1,
-        position: 'relative',
-    },
     bottomFade: {
         position: 'absolute',
         left: 0,
         right: 0,
-        bottom: 96+96,    // sits directly above CurrentSounds
-        height: 50,    // how tall the gradient is
-        zIndex: 1,     // above FlatList (zIndex 0) but below CurrentSounds
-    },
-    currentSounds: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 2,     // above the fade
+        bottom: 96+96,  // height of CurrentSounds
+        height: 50,
+        zIndex: 1,
     },
 });
