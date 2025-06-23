@@ -8,6 +8,7 @@ import {
     StyleSheet,
     ImageBackgroundProps,
     ViewStyle,
+    ImageSourcePropType,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,19 +16,19 @@ import { useTheme } from '../theme';
 
 export interface CardProps {
     title: string;
-    backgroundImage?: number | string | null;
+    backgroundImage?: ImageSourcePropType | null;
     isFavorite?: boolean;
-    selected?: boolean;          // ← new!
+    isPlaying?: boolean;
+    selected?: boolean;
     onFavoriteToggle?: () => void;
-    onPlay?: () => void;
+    onPlayToggle?: () => void;
+    onPress?: () => void; // for selection
 }
 
 const generateRandomColor = (): string => {
     let color = '#';
     for (let i = 0; i < 6; i++) {
-        color += '0123456789ABCDEF'.charAt(
-            Math.floor(Math.random() * 16)
-        );
+        color += '0123456789ABCDEF'.charAt(Math.floor(Math.random() * 16));
     }
     return color;
 };
@@ -36,42 +37,30 @@ const Card: React.FC<CardProps> = ({
     title,
     backgroundImage = null,
     isFavorite = false,
+    isPlaying = false,
     selected = false,
     onFavoriteToggle,
-    onPlay,
+    onPlayToggle,
+    onPress,
 }) => {
     const theme = useTheme();
     const randomBg = useMemo(() => generateRandomColor(), []);
 
-    // always have your random or image bg
-    const containerStyle: ViewStyle[] = [
-        styles.card,
-        { backgroundColor: randomBg },
-    ];
-
-    // add a primary‐colored border when selected
+    const containerStyle: ViewStyle[] = [styles.card, { backgroundColor: randomBg }];
     if (selected) {
-        containerStyle.push({
-            borderWidth: 2,
-            borderColor: theme.primary,
-        });
+        containerStyle.push({ borderWidth: 2, borderColor: theme.primary });
     }
 
-    const imageProps: Partial<ImageBackgroundProps> = backgroundImage
-        ? { source: backgroundImage as any }
-        : {};
+    const imageProps: Partial<ImageBackgroundProps> =
+        backgroundImage ? { source: backgroundImage as any } : {};
 
     return (
         <TouchableOpacity
             style={styles.wrapper}
             activeOpacity={0.9}
-            onPress={onPlay}
+            onPress={onPress}
         >
-            <ImageBackground
-                {...imageProps}
-                style={containerStyle}
-                imageStyle={styles.image}
-            >
+            <ImageBackground {...imageProps} style={containerStyle} imageStyle={styles.image}>
                 <LinearGradient
                     colors={[`${theme.background}CC`, 'transparent']}
                     start={[0, 0]}
@@ -92,13 +81,25 @@ const Card: React.FC<CardProps> = ({
                         {title}
                     </Text>
                     <View style={styles.icons}>
-                        <TouchableOpacity onPress={onPlay}>
-                            <FontAwesome name="volume-up" size={18} color="#ffffff" />
+                        <TouchableOpacity
+                            onPress={onPlayToggle}
+                            style={styles.iconButton}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                            <FontAwesome
+                                name={isPlaying ? 'pause' : 'play'}
+                                size={20}
+                                color={isPlaying ? theme.primary : theme.text}
+                            />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={onFavoriteToggle}>
+                        <TouchableOpacity
+                            onPress={onFavoriteToggle}
+                            style={styles.iconButton}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
                             <FontAwesome
                                 name={isFavorite ? 'heart' : 'heart-o'}
-                                size={18}
+                                size={20}
                                 color={isFavorite ? '#FF0000' : theme.text}
                             />
                         </TouchableOpacity>
@@ -144,8 +145,10 @@ const styles = StyleSheet.create({
     },
     icons: {
         flexDirection: 'row',
-        width: 48,
-        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    iconButton: {
+        padding: 10,
     },
     fadeLeft: {
         position: 'absolute',

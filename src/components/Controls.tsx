@@ -10,6 +10,7 @@ export interface ControlsProps {
     onPlayPause: () => void;
     volume: number;
     onVolumeChange: (v: number) => void;
+    onTimerPress: () => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -17,17 +18,22 @@ const Controls: React.FC<ControlsProps> = ({
     onPlayPause,
     volume,
     onVolumeChange,
-    // currentTime and duration props remain but are not displayed
+    onTimerPress,
 }) => {
     const theme = useTheme();
 
     return (
         <View style={[styles.container, { backgroundColor: theme.controlBackground }]}>
             <TouchableOpacity
-                style={[styles.playButton, ]}
+                style={styles.playButton}
                 onPress={onPlayPause}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-                <FontAwesome name={isPlaying ? 'pause' : 'play'} size={24} color={theme.text} />
+                <FontAwesome
+                    name={isPlaying ? 'pause' : 'play'}
+                    size={24}
+                    color={theme.text}
+                />
             </TouchableOpacity>
 
             <Slider
@@ -41,8 +47,13 @@ const Controls: React.FC<ControlsProps> = ({
                 onValueChange={onVolumeChange}
             />
 
-            {/* Timer icon replaces time text */}
-            <FontAwesome name="clock-o" size={20} color={theme.text} />
+            <TouchableOpacity
+                style={styles.iconButton}
+                onPress={onTimerPress}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+                <FontAwesome name="clock-o" size={20} color={theme.text} />
+            </TouchableOpacity>
         </View>
     );
 };
@@ -51,7 +62,7 @@ export default Controls;
 
 const styles = StyleSheet.create({
     container: {
-        width: '100%', 
+        width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
@@ -71,5 +82,8 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 40,
         marginRight: 12,
+    },
+    iconButton: {
+        padding: 8,
     },
 });

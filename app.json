@@ -21,14 +21,15 @@
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.tainguyen7696.soundscape"
+      "bundleIdentifier": "com.tai.soundscape"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.tai.soundscape"
     },
     "web": {
       "favicon": "./assets/favicon.png"

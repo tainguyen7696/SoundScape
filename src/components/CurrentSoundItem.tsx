@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useTheme } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export interface CurrentSoundItemProps {
     title: string;
@@ -50,6 +51,20 @@ const CurrentSoundItem: React.FC<CurrentSoundItemProps> = ({
                 style={styles.wrapper}
                 imageStyle={styles.image}
             >
+                <LinearGradient
+                    colors={[`${theme.background}CC`, 'transparent']}
+                    start={[0, 0]}
+                    end={[1, 0]}
+                    style={styles.fadeLeft}
+                    pointerEvents="none"
+                />
+                <LinearGradient
+                    colors={['transparent', `${theme.background}CC`]}
+                    start={[0, 0]}
+                    end={[1, 0]}
+                    style={styles.fadeRight}
+                    pointerEvents="none"
+                />
                 {/* “X” remove button */}
                 <TouchableOpacity
                     onPress={onRemove}
@@ -95,5 +110,21 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '500',
         zIndex: 2,
+    },
+    fadeLeft: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: '40%',
+        zIndex: 1,
+    },
+    fadeRight: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: '40%',
+        zIndex: 1,
     },
 });

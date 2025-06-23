@@ -8,7 +8,7 @@ export interface PersistedSound {
     title: string;
     audioUrl: string;
     backgroundImage?: string;
-    settings: { volume: number; soften: number; oscillate: number };
+    settings: { volume: number; soften: number; oscillate: boolean };
 }
 
 export function usePersistedCurrentSounds() {
@@ -19,10 +19,8 @@ export function usePersistedCurrentSounds() {
         (async () => {
             try {
                 const json = await AsyncStorage.getItem(STORAGE_KEY);
-                console.debug('[PersistedSounds] loaded raw:', json);
                 if (json) {
                     const parsed = JSON.parse(json);
-                    console.debug('[PersistedSounds] parsed:', parsed);
                     setCurrentSounds(parsed);
                 }
             } catch (err) {
@@ -36,7 +34,6 @@ export function usePersistedCurrentSounds() {
         (async () => {
             try {
                 const json = JSON.stringify(currentSounds);
-                console.debug('[PersistedSounds] saving:', json);
                 await AsyncStorage.setItem(STORAGE_KEY, json);
             } catch (err) {
                 console.error('[PersistedSounds] save error:', err);
