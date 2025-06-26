@@ -14,7 +14,7 @@ interface TimerProps {
 
 const TimerSettingsModal: React.FC<TimerProps> = ({
     visible,
-    initialMinutes = 10,
+    initialMinutes = 180,
     onTimeChange,
     onClose,
 }) => {

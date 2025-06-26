@@ -10,6 +10,7 @@ export interface SoundRecord {
     audio_url: string;
     background_image_url: string | null;
     is_premium: boolean;
+    isFavorite: boolean;
 }
 
 export interface CachedSound {
@@ -17,6 +18,7 @@ export interface CachedSound {
     localAudio: string;
     localImage: string | null;
     isPremium: boolean;
+    isFavorite: boolean;
 }
 
 // helper: download & cache a remote file

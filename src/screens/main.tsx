@@ -9,9 +9,8 @@ import {
     UIManager,
     LayoutAnimation,
     ImageSourcePropType,
-    Text,
 } from 'react-native';
-import { Audio } from 'expo-av';
+import { Audio } from 'expo-av';                     // only used for preview
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../components/Header';
 import Search from '../components/Search';
@@ -21,12 +20,18 @@ import Controls from '../components/Controls';
 import SoundSettingsModal from '../components/SoundSettingsModal';
 import TimerSettingsModal from '../components/TimerSettingsModal';
 import { useTheme } from '../theme';
-import { useAudioPlayer, CurrentSound as AudioSound } from '../hooks/useAudioPlayer';
+
+// <-- Remove useAudioPlayer
+// import { useAudioPlayer, CurrentSound as AudioSound } from '../hooks/useAudioPlayer';
+
+// <-- Add useTrackPlayer
+import { useTrackPlayer, CurrentSound as TrackSound } from '../hooks/useTrackPlayer';
+
 import { usePersistedCurrentSounds, PersistedSound } from '../hooks/usePersistedCurrentSounds';
 import { usePersistedFavorites } from '../hooks/usePersistedFavorites';
 import { useCachedSounds } from '../hooks/useCachedSounds';
 
-const categories = ['All sounds', 'Premium', 'Recently added'];
+const categories = ['All sounds', 'Premium', 'Recently added', 'Favorites'];
 const MAX_SLOTS = 3;
 
 type CurrentSoundUI = Omit<PersistedSound, 'backgroundImage'> & {
@@ -46,7 +51,7 @@ export default function Main() {
     // Fetch & cache
     const { sounds, loading } = useCachedSounds();
 
-    // Preview state
+    // Preview state (Expo-AV)
     const previewRef = useRef<Audio.Sound | null>(null);
     const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
@@ -64,6 +69,8 @@ export default function Main() {
     // Persisted slots & favorites
     const [persistedSounds, setPersistedSounds] = usePersistedCurrentSounds();
     const [favorites, setFavorites] = usePersistedFavorites();
+
+    // Map to your UI format
     const currentSounds: CurrentSoundUI[] = persistedSounds.map(s => ({
         title: s.title,
         audioUrl: s.audioUrl,
@@ -71,34 +78,30 @@ export default function Main() {
         backgroundImage: s.backgroundImage ? { uri: s.backgroundImage } : null,
     }));
 
+    // Prepare TrackPlayer items
+    const trackList: TrackSound[] = persistedSounds.map(s => ({
+        id: s.title,
+        url: s.audioUrl,
+        title: s.title,
+    }));
+
     // Global volume
     const [masterVolume, setMasterVolume] = useState<number>(1);
 
     // Timer settings
-    const [timerMinutes, setTimerMinutes] = useState<number>(60);
+    const [timerMinutes, setTimerMinutes] = useState<number>(180);
     const [elapsedSec, setElapsedSec] = useState<number>(0);
     const [endTime, setEndTime] = useState<Date | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const tickRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Drive global audio loops
-    useAudioPlayer(
-        currentSounds.map(s => ({ audioUrl: s.audioUrl, settings: s.settings })) as AudioSound[],
-        isPlaying,
-        masterVolume
-    );
+    // DRIVE PLAYBACK via TrackPlayer
+    useTrackPlayer(trackList, isPlaying, masterVolume);
 
     // Timer countdown & elapsed display
     useEffect(() => {
-        // clear any existing
-        if (timerRef.current) {
-            clearTimeout(timerRef.current);
-            timerRef.current = null;
-        }
-        if (tickRef.current) {
-            clearInterval(tickRef.current);
-            tickRef.current = null;
-        }
+        if (timerRef.current) clearTimeout(timerRef.current);
+        if (tickRef.current) clearInterval(tickRef.current);
         setElapsedSec(0);
         setEndTime(null);
 
@@ -107,15 +110,10 @@ export default function Main() {
             const end = new Date(now.getTime() + timerMinutes * 60 * 1000);
             setEndTime(end);
 
-            // schedule stop
-            timerRef.current = setTimeout(() => {
-                setIsPlaying(false);
-            }, timerMinutes * 60 * 1000);
-            // tick every second
-            tickRef.current = setInterval(() => {
-                setElapsedSec(sec => sec + 1);
-            }, 1000);
+            timerRef.current = setTimeout(() => setIsPlaying(false), timerMinutes * 60 * 1000);
+            tickRef.current = setInterval(() => setElapsedSec(sec => sec + 1), 1000);
         }
+
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
             if (tickRef.current) clearInterval(tickRef.current);
@@ -192,14 +190,15 @@ export default function Main() {
         setSelectedIndex(null);
     };
 
-    // Filter + search
+    // Filter + search + categories
     const [category, setCategory] = useState(categories[0]);
     const [searchText, setSearchText] = useState('');
     const filtered = sounds
         .filter(s => s.title.toLowerCase().includes(searchText.toLowerCase()))
-        .filter((_, i) => {
-            if (category === 'Premium') return sounds[i].isPremium;
+        .filter((s, i) => {
+            if (category === 'Premium') return s.isPremium;
             if (category === 'Recently added') return i < 10;
+            if (category === 'Favorites') return favorites.includes(s.title);
             return true;
         });
 
@@ -248,7 +247,7 @@ export default function Main() {
 
                 {currentSounds.length > 0 && (
                     <LinearGradient
-                        colors={["transparent", theme.background]}
+                        colors={['transparent', theme.background]}
                         start={[0, 0]}
                         end={[0, 1]}
                         style={styles.bottomFade}
@@ -267,15 +266,13 @@ export default function Main() {
             </View>
 
             {currentSounds.length > 0 && (
-                <>
-                    <Controls
-                        isPlaying={isPlaying}
-                        onPlayPause={() => setIsPlaying(p => !p)}
-                        volume={masterVolume}
-                        onVolumeChange={setMasterVolume}
-                        onTimerPress={() => setTimerVisible(true)}
-                    />
-                </>
+                <Controls
+                    isPlaying={isPlaying}
+                    onPlayPause={() => setIsPlaying(p => !p)}
+                    volume={masterVolume}
+                    onVolumeChange={setMasterVolume}
+                    onTimerPress={() => setTimerVisible(true)}
+                />
             )}
 
             <SoundSettingsModal
@@ -300,7 +297,7 @@ export default function Main() {
                         return copy;
                     });
                 }}
-                onOscillateChange={(on: boolean) => {
+                onOscillateChange={on => {
                     const idx = selectedIndex!;
                     setPersistedSounds(prev => {
                         const copy = [...prev];

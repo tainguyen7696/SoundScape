@@ -46,7 +46,7 @@ const SoundSettingsModal: React.FC<SoundProps> = ({
                 />
             </View>
             <View style={styles.row}>
-                <Text style={[styles.label, { color: theme.text }]}>Soften</Text>
+                <Text style={[styles.label, { color: theme.text }]}>Warmth</Text>
                 <Slider
                     style={styles.slider}
                     minimumValue={0}
@@ -58,7 +58,7 @@ const SoundSettingsModal: React.FC<SoundProps> = ({
                     thumbTintColor={theme.sliderThumb}
                 />
             </View>
-            <View style={styles.row}>
+            {/*<View style={styles.row}>
                 <Text style={[styles.label, { color: theme.text }]}>Oscillate</Text>
                 <Switch
                     value={oscillate}
@@ -66,7 +66,7 @@ const SoundSettingsModal: React.FC<SoundProps> = ({
                     trackColor={{ true: theme.primary, false: theme.sliderTrack }}
                     thumbColor={theme.sliderThumb}
                 />
-            </View>
+            </View>*/}
         </PullUp>
     );
 };
