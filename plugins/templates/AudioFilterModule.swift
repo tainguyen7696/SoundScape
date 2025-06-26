@@ -18,13 +18,11 @@ class AudioFilterModule: NSObject {
           let player = playerNode,
           let eq     = eq else { return }
 
-    // Configure low-pass band
-    let band     = eq.bands[0]
+    let band = eq.bands[0]
     band.filterType = .lowPass
     band.frequency  = cutoff.floatValue
     band.bypass     = false
 
-    // Build audio graph
     engine.attach(player)
     engine.attach(eq)
     engine.connect(player, to: eq, format: nil)
@@ -42,6 +40,6 @@ class AudioFilterModule: NSObject {
 
   @objc
   static func requiresMainQueueSetup() -> Bool {
-    return true
+    true
   }
 }

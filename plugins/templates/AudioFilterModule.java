@@ -1,4 +1,4 @@
-package com.soundscape;
+package com.tai.soundscape;  // <-- match your Android package from app.json
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -34,21 +34,18 @@ public class AudioFilterModule extends ReactContextBaseJavaModule {
       return;
     }
 
-    // Create Equalizer and attach to player
     Equalizer eq = new Equalizer(0, player.getAudioSessionId());
     eq.setEnabled(true);
-    short bands      = eq.getNumberOfBands();
-    short[] range    = eq.getBandLevelRange();
-
+    short bands   = eq.getNumberOfBands();
+    short[] range = eq.getBandLevelRange();
     for (short i = 0; i < bands; i++) {
-      int freq = eq.getCenterFreq(i) / 1000; // in Hz
+      int freq = eq.getCenterFreq(i) / 1000;
       if (freq > cutoff) {
-        eq.setBandLevel(i, range[0]); // silence above cutoff
+        eq.setBandLevel(i, range[0]);
       } else {
-        eq.setBandLevel(i, range[1]); // full volume below
+        eq.setBandLevel(i, range[1]);
       }
     }
-
     player.start();
   }
 }
