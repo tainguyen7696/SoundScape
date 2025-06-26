@@ -10,7 +10,7 @@ module.exports = function withAudioFilter(config) {
         async ({ modResults, modRequest }) => {
             const to = path.join(
                 modRequest.projectRoot,
-                'android/app/src/main/java/com/soundscape/AudioFilterModule.java'
+                'android/app/src/main/java/com/tai/soundscape/AudioFilterModule.java'
             );
             const from = path.join(__dirname, 'templates/AudioFilterModule.java');
             fs.copyFileSync(from, to);

@@ -8,8 +8,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "plugins": [
-      "expo-dev-client",
-      "./plugins/with-audio-filter.cjs"
+      "expo-dev-client"
     ],
     "splash": {
       "image": "./assets/splash-icon.png",

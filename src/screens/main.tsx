@@ -5,12 +5,13 @@ import {
     FlatList,
     StyleSheet,
     ActivityIndicator,
+    NativeModules,
     Platform,
     UIManager,
     LayoutAnimation,
     ImageSourcePropType,
 } from 'react-native';
-import { Audio } from 'expo-av';                     // only used for preview
+import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../components/Header';
 import Search from '../components/Search';
@@ -20,23 +21,26 @@ import Controls from '../components/Controls';
 import SoundSettingsModal from '../components/SoundSettingsModal';
 import TimerSettingsModal from '../components/TimerSettingsModal';
 import { useTheme } from '../theme';
-
-// <-- Remove useAudioPlayer
-// import { useAudioPlayer, CurrentSound as AudioSound } from '../hooks/useAudioPlayer';
-
-// <-- Add useTrackPlayer
 import { useTrackPlayer, CurrentSound as TrackSound } from '../hooks/useTrackPlayer';
 
 import { usePersistedCurrentSounds, PersistedSound } from '../hooks/usePersistedCurrentSounds';
 import { usePersistedFavorites } from '../hooks/usePersistedFavorites';
 import { useCachedSounds } from '../hooks/useCachedSounds';
 
+const { AudioFilterModule } = NativeModules;
 const categories = ['All sounds', 'Premium', 'Recently added', 'Favorites'];
 const MAX_SLOTS = 3;
 
 type CurrentSoundUI = Omit<PersistedSound, 'backgroundImage'> & {
     backgroundImage: ImageSourcePropType | null;
 };
+
+function softenToCutoff(soften: number) {
+    const max = 20000;  // Hz
+    const min = 200;    // Hz
+    // invert so higher ‘soften’ = lower cutoff
+    return min + (1 - soften) * (max - min);
+}
 
 export default function Main() {
     const theme = useTheme();
@@ -291,11 +295,17 @@ export default function Main() {
                 }}
                 onSoftenChange={v => {
                     const idx = selectedIndex!;
+                    // update persisted settings
                     setPersistedSounds(prev => {
                         const copy = [...prev];
                         copy[idx].settings.soften = v;
                         return copy;
                     });
+                    // if we’re running natively, tell the module
+                    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+                        const cutoffFreq = softenToCutoff(v);
+                        AudioFilterModule.setCutoff(cutoffFreq);
+                    }
                 }}
                 onOscillateChange={on => {
                     const idx = selectedIndex!;
