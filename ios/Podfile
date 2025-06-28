@@ -49,7 +49,7 @@ target 'soundscape' do
   )
 
   post_install do |installer|
-    # Standard RN post-install
+    # Standard React Native setup
     react_native_post_install(
       installer,
       config[:reactNativePath],
@@ -58,18 +58,18 @@ target 'soundscape' do
     )
 
     # Prevent resource bundles being code-signed on Xcode 14+
-    installer.target_installation_results.pod_target_installation_results.each do |_pod_name, result|
-      result.resource_bundle_targets.each do |bundle_target|
-        bundle_target.build_configurations.each do |cfg|
+    installer.target_installation_results.pod_target_installation_results.each do |_pod, result|
+      result.resource_bundle_targets.each do |bundle|
+        bundle.build_configurations.each do |cfg|
           cfg.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
       end
     end
 
     # 1) Silence the Hermes “script has no outputs” warning
-    installer.pods_project.targets.each do |target|
-      next unless target.name == 'hermes-engine'
-      target.build_phases.each do |phase|
+    installer.pods_project.targets.each do |t|
+      next unless t.name == 'hermes-engine'
+      t.build_phases.each do |phase|
         if phase.respond_to?(:name) && phase.name.include?('Replace Hermes')
           phase.input_paths  = []
           phase.output_paths = []
@@ -77,9 +77,9 @@ target 'soundscape' do
       end
     end
 
-    # 2) Patch SafeAreaContext’s C++ to match the new StyleLength API
+    # 2) Patch SafeAreaContext C++ for the new StyleLength API
     pods_root = installer.sandbox.root.to_s
-    node_cpp = File.join(
+    cpp_file = File.join(
       pods_root,
       'react-native-safe-area-context',
       'common', 'cpp',
@@ -87,17 +87,26 @@ target 'soundscape' do
       'components', 'safeareacontext',
       'RNCSafeAreaViewShadowNode.cpp'
     )
-    if File.exist?(node_cpp)
-      content = File.read(node_cpp)
-      patched = content.gsub(/arg\.value\.unit,\s*arg\.value\.value/, 'arg.unit, arg.value')
-      File.write(node_cpp, patched)
+    if File.exist?(cpp_file)
+      src = File.read(cpp_file)
+      patched = src.gsub(/arg\.value\.unit,\s*arg\.value\.value/, 'arg.unit, arg.value')
+      File.write(cpp_file, patched)
     end
 
     # 3) Unify DEFINES_MODULE across conflicting pods
     %w[expo-dev-menu Main ReactNativeCompatibles SafeAreaView Vendored].each do |name|
-      installer.pods_project.targets.find_all { |t| t.name == name }.each do |tgt|
-        tgt.build_configurations.each do |cfg|
-          cfg.build_settings['DEFINES_MODULE'] = 'YES'
+      installer.pods_project.targets.select { |x| x.name == name }.each do |tgt|
+        tgt.build_configurations.each { |cfg| cfg.build_settings['DEFINES_MODULE'] = 'YES' }
+      end
+    end
+
+    # 4) Silence the Expo “Configure project” script phase
+    installer.pods_project.targets.each do |t|
+      next unless t.name == 'soundscape'
+      t.build_phases.grep(Xcodeproj::Project::Object::PBXShellScriptBuildPhase).each do |phase|
+        if phase.name.include?('Configure project')
+          phase.input_paths  = []
+          phase.output_paths = []
         end
       end
     end
