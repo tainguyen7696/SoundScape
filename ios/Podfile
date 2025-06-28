@@ -1,3 +1,7 @@
+# coding: utf-8
+Encoding.default_external = Encoding::UTF_8
+Encoding.default_internal = Encoding::UTF_8
+
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 
@@ -62,7 +66,7 @@ target 'soundscape' do
         end
       end
 
-    # >>>> 1) Silence the Hermes “script has no outputs” warning
+    # >>>> 1) Silence the Hermes â€œscript has no outputsâ€ warning
     installer.pods_project.targets.each do |target|
       if target.name == 'hermes-engine'
         target.build_phases.each do |phase|
@@ -74,7 +78,7 @@ target 'soundscape' do
       end
     end
 
-    # >>>> 2) Patch SafeAreaContext’s C++ to match the new StyleLength API
+    # >>>> 2) Patch SafeAreaContextâ€™s C++ to match the new StyleLength API
     pods_root = installer.sandbox.pods_root.to_s
     node_cpp = File.join(
       pods_root,
