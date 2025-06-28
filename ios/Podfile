@@ -5,8 +5,8 @@ Encoding.default_internal = Encoding::UTF_8
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 require 'xcodeproj'
-
 require 'json'
+
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
 
 ENV['RCT_NEW_ARCH_ENABLED'] = '0' if podfile_properties['newArchEnabled'] == 'false'
@@ -50,7 +50,7 @@ target 'soundscape' do
   )
 
   post_install do |installer|
-    # 1) Standard React Native post-install
+    # 1) Standard RN post-install
     react_native_post_install(
       installer,
       config[:reactNativePath],
@@ -101,7 +101,7 @@ target 'soundscape' do
       end
     end
 
-    # 6) Silence the Expo “[Expo] Configure project” script phase in the main Xcode project
+    # 6) Let “[Expo] Configure project” run, but suppress dependency-analysis warnings
     project_path = File.join(installer.sandbox.root.parent.to_s, 'soundscape.xcodeproj')
     if File.exist?(project_path)
       project = Xcodeproj::Project.open(project_path)
