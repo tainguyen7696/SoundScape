@@ -15,6 +15,7 @@
     "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/slider": "4.5.6",
+    "@react-native-voice/voice": "^3.2.4",
     "@supabase/supabase-js": "^2.50.0",
     "axios": "^1.10.0",
     "expo": "53.0.13",
@@ -35,7 +36,9 @@
     "react-native-svg": "15.11.2",
     "react-native-track-player": "^4.1.1",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-voice": "^0.3.0",
     "react-native-web": "^0.20.0",
+    "shaka-player": "^4.15.5",
     "undici": "^7.10.0"
   },
   "devDependencies": {

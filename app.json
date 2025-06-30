@@ -9,7 +9,8 @@
     "newArchEnabled": true,
     "plugins": [
       "expo-dev-client",
-      "expo-audio"
+      "expo-audio",
+      "@react-native-voice/voice"
     ],
     "splash": {
       "image": "./assets/splash-icon.png",

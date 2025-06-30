@@ -5,23 +5,30 @@ import { SafeAreaView, View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Main from 'screens/main';
 import { useTheme } from './src/theme';
-
-// Track Player imports
+import { VoiceCommandProvider } from './src/voice/VoiceCommandContext';
+import { VoiceCommandListener } from './src/components/VoiceCommandListener';
 import TrackPlayer, { Capability } from 'react-native-track-player';
+import audioEngine from './src/audio/audioEngine';
 
 export default function App() {
     const theme = useTheme();
 
     useEffect(() => {
         (async () => {
-            // 1) Initialize the player
+            // 0) Initialize AudioEngine (fetch sound URLs from Supabase)
+            try {
+                await audioEngine.init();
+            } catch (err) {
+                console.error('AudioEngine initialization failed:', err);
+            }
+
+            // 1) Initialize the track player
             await TrackPlayer.setupPlayer();
 
-            // 2) Configure options (including crossfade duration)
+            // 2) Configure player options (including crossfade)
             await TrackPlayer.updateOptions({
                 stopWithApp: true,
-                // WHAT YOU NEED: crossfadeDuration in seconds
-                crossfadeDuration: 2,
+                crossfadeDuration: 2, // 2 seconds crossfade between tracks
                 capabilities: [
                     Capability.Play,
                     Capability.Pause,
@@ -31,17 +38,22 @@ export default function App() {
                 compactCapabilities: [Capability.Play, Capability.Pause],
             });
 
-            // 3) Register your background service
+            // 3) Register background service for remote controls
             TrackPlayer.registerPlaybackService(() => require('./src/playerService'));
         })();
     }, []);
 
     return (
         <SafeAreaProvider>
-            <View style={[styles.container, { backgroundColor: theme.background }]}>
-                <Main />
-                <StatusBar style="auto" />
-            </View>
+            <VoiceCommandProvider>
+                <View style={[styles.container, { backgroundColor: theme.background }]}>
+                    <Main />
+                    <StatusBar style="auto" />
+                </View>
+
+                {/* Debug overlay to visualize last voice command and state */}
+                <VoiceCommandListener />
+            </VoiceCommandProvider>
         </SafeAreaProvider>
     );
 }

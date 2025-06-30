@@ -89,32 +89,40 @@ target 'soundscape' do
       'RNCSafeAreaViewShadowNode.cpp'
     )
     if File.exist?(cpp_file)
-      src = File.read(cpp_file)
-      patched = src.gsub(/arg\.value\.unit,\s*arg\.value\.value/, 'arg.unit, arg.value')
+      content = File.read(cpp_file)
+      patched = content.gsub(/arg\.value\.unit,\s*arg\.value\.value/, 'arg.unit, arg.value')
       File.write(cpp_file, patched)
     end
 
     # 5) Unify DEFINES_MODULE across conflicting pods
     %w[expo-dev-menu Main ReactNativeCompatibles SafeAreaView Vendored].each do |name|
       installer.pods_project.targets.select { |x| x.name == name }.each do |tgt|
-        tgt.build_configurations.each { |cfg| cfg.build_settings['DEFINES_MODULE'] = 'YES' }
+        tgt.build_configurations.each do |cfg|
+          cfg.build_settings['DEFINES_MODULE'] = 'YES'
+        end
       end
     end
 
-    # 6) Let “[Expo] Configure project” run, but suppress dependency-analysis warnings
+    # 6) Disable the “[Expo] Configure project” script phase entirely
     project_path = File.join(installer.sandbox.root.parent.to_s, 'soundscape.xcodeproj')
     if File.exist?(project_path)
       project = Xcodeproj::Project.open(project_path)
-      project.targets.each do |t|
-        next unless t.name == 'soundscape'
-        t.build_phases.grep(Xcodeproj::Project::Object::PBXShellScriptBuildPhase).each do |phase|
+      project.targets.each do |tgt|
+        next unless tgt.name == 'soundscape'
+        tgt.build_phases.grep(Xcodeproj::Project::Object::PBXShellScriptBuildPhase).each do |phase|
           if phase.name.include?('Configure project')
-            phase.input_paths  = []
-            phase.output_paths = []
+            phase.shell_script = 'exit 0'
           end
         end
       end
       project.save
+    end
+
+    # 7) Strip Windows CRLF from the generated .xcode.env so `/bin/sh` won’t choke
+    xcode_env_path = File.join(installer.sandbox.root.parent.to_s, '.xcode.env')
+    if File.exist?(xcode_env_path)
+      txt = File.read(xcode_env_path)
+      File.write(xcode_env_path, txt.gsub("\r", ''))
     end
   end
 end
