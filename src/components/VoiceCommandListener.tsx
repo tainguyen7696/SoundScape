@@ -4,13 +4,7 @@ import { useVoiceCommands } from '../hooks/useVoiceCommands'
 
 export const VoiceCommandListener: React.FC = () => {
     const { lastCommand, state } = useVoiceCommands()
-    return (
-        <View style={styles.container}>
-            <Text style={styles.text}>Last: {lastCommand?.type || '–'}</Text>
-            <Text style={styles.text}>Scene: {state.scene || '–'}</Text>
-            <Text style={styles.text}>Layers: {state.layers.join(', ')}</Text>
-        </View>
-    )
+    return null;
 }
 
 const styles = StyleSheet.create({

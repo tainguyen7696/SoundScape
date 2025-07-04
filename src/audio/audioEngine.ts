@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
  * Represents one row in your Supabase `sounds` table.
  */
 interface SoundEntry {
-    key: string
+    title: string
     url: string
 }
 
@@ -25,7 +25,7 @@ class AudioEngine {
     async init() {
         const { data, error } = await supabase
             .from<SoundEntry>('sounds')
-            .select('key, url')
+            .select('title, audio_url')
 
         if (error) {
             console.error('AudioEngine.init(): failed to fetch sounds', error)

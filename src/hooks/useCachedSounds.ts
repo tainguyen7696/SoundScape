@@ -11,6 +11,7 @@ export interface SoundRecord {
     background_image_url: string | null;
     is_premium: boolean;
     isFavorite: boolean;
+    category: string;
 }
 
 export interface CachedSound {
@@ -19,6 +20,7 @@ export interface CachedSound {
     localImage: string | null;
     isPremium: boolean;
     isFavorite: boolean;
+    category: string;
 }
 
 // helper: download & cache a remote file
@@ -68,7 +70,7 @@ export function useCachedSounds() {
                 console.log('[useCachedSounds] platform:', Platform.OS);
                 const { data, error } = await supabase
                     .from<SoundRecord>('sounds')
-                    .select('title, audio_url, background_image_url, is_premium')
+                    .select('title, audio_url, background_image_url, is_premium, category')
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
@@ -81,6 +83,7 @@ export function useCachedSounds() {
                         localAudio: r.audio_url,
                         localImage: r.background_image_url,
                         isPremium: r.is_premium,
+                        category: r.category,
                     }));
                     setSounds(webSounds);
                 } else {
@@ -93,6 +96,7 @@ export function useCachedSounds() {
                                 ? await cacheFile(r.background_image_url, 'images')
                                 : null,
                             isPremium: r.is_premium,
+                            category: r.category,
                         }))
                     );
                     if (mounted) setSounds(nativeSounds);

@@ -39,7 +39,8 @@
     "react-native-voice": "^0.3.0",
     "react-native-web": "^0.20.0",
     "shaka-player": "^4.15.5",
-    "undici": "^7.10.0"
+    "undici": "^7.10.0",
+    "expo-constants": "~17.1.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

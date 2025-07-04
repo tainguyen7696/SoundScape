@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     },
     dropdownMenu: {
         position: 'absolute',
-        top: 56,
+        top: 80,
         alignSelf: 'center',
         borderRadius: 8,
         paddingVertical: 4,

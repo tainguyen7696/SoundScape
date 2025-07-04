@@ -1,4 +1,4 @@
-// src/hooks/usePersistedCurrentSounds.ts
+// src/hooks/usePersistedScene.ts
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -8,11 +8,11 @@ export interface PersistedSound {
     title: string;
     audioUrl: string;
     backgroundImage?: string;
-    settings: { volume: number; soften: number; oscillate: boolean };
+    settings: { volume: number; warmth: number; };
 }
 
-export function usePersistedCurrentSounds() {
-    const [currentSounds, setCurrentSounds] = useState<PersistedSound[]>([]);
+export function usePersistedScene() {
+    const [Scene, setScene] = useState<PersistedSound[]>([]);
 
     // Load saved sounds on mount and log
     useEffect(() => {
@@ -21,7 +21,7 @@ export function usePersistedCurrentSounds() {
                 const json = await AsyncStorage.getItem(STORAGE_KEY);
                 if (json) {
                     const parsed = JSON.parse(json);
-                    setCurrentSounds(parsed);
+                    setScene(parsed);
                 }
             } catch (err) {
                 console.error('[PersistedSounds] load error:', err);
@@ -33,13 +33,13 @@ export function usePersistedCurrentSounds() {
     useEffect(() => {
         (async () => {
             try {
-                const json = JSON.stringify(currentSounds);
+                const json = JSON.stringify(Scene);
                 await AsyncStorage.setItem(STORAGE_KEY, json);
             } catch (err) {
                 console.error('[PersistedSounds] save error:', err);
             }
         })();
-    }, [currentSounds]);
+    }, [Scene]);
 
-    return [currentSounds, setCurrentSounds] as const;
+    return [Scene, setScene] as const;
 }

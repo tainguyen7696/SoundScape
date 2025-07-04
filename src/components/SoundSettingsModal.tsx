@@ -9,11 +9,9 @@ interface SoundProps {
     visible: boolean;
     title: string;
     volume: number;
-    soften: number;
-    oscillate: boolean;
+    warmth: number;
     onVolumeChange: (v: number) => void;
-    onSoftenChange: (v: number) => void;
-    onOscillateChange: (on: boolean) => void;
+    onWarmthChange: (v: number) => void;
     onClose: () => void;
 }
 
@@ -21,11 +19,9 @@ const SoundSettingsModal: React.FC<SoundProps> = ({
     visible,
     title,
     volume,
-    soften,
-    oscillate,
+    warmth,
     onVolumeChange,
-    onSoftenChange,
-    onOscillateChange,
+    onWarmthChange,
     onClose,
 }) => {
     const theme = useTheme();
@@ -51,22 +47,13 @@ const SoundSettingsModal: React.FC<SoundProps> = ({
                     style={styles.slider}
                     minimumValue={0}
                     maximumValue={1}
-                    value={soften}
-                    onValueChange={onSoftenChange}
+                    value={warmth}
+                    onValueChange={onWarmthChange}
                     minimumTrackTintColor={theme.primary}
                     maximumTrackTintColor={theme.sliderTrack}
                     thumbTintColor={theme.sliderThumb}
                 />
             </View>
-            {/*<View style={styles.row}>
-                <Text style={[styles.label, { color: theme.text }]}>Oscillate</Text>
-                <Switch
-                    value={oscillate}
-                    onValueChange={onOscillateChange}
-                    trackColor={{ true: theme.primary, false: theme.sliderTrack }}
-                    thumbColor={theme.sliderThumb}
-                />
-            </View>*/}
         </PullUp>
     );
 };

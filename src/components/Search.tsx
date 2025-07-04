@@ -42,6 +42,8 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 20,
         paddingHorizontal: 12,
+        marginHorizontal: 12,
+        marginTop: 16,
         marginBottom: 8,
     },
     icon: {

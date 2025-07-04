@@ -14,26 +14,21 @@ import {
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../components/Header';
-import Search from '../components/Search';
-import Card from '../components/Card';
-import CurrentSounds from '../components/CurrentSounds';
+import Categories from '../components/Categories';
+import Scene from '../components/Scene';
 import Controls from '../components/Controls';
 import SoundSettingsModal from '../components/SoundSettingsModal';
 import TimerSettingsModal from '../components/TimerSettingsModal';
 import { useTheme } from '../theme';
-import { useTrackPlayer, CurrentSound as TrackSound } from '../hooks/useTrackPlayer';
-
-import { usePersistedCurrentSounds, PersistedSound } from '../hooks/usePersistedCurrentSounds';
+import { useScenePlayer, SceneSound } from '../hooks/useScenePlayer';
+import Constants from 'expo-constants';
+import { usePersistedScene, PersistedSound } from '../hooks/usePersistedScene';
 import { usePersistedFavorites } from '../hooks/usePersistedFavorites';
 import { useCachedSounds } from '../hooks/useCachedSounds';
 
 const { AudioFilterModule } = NativeModules;
 const categories = ['All sounds', 'Premium', 'Recently added', 'Favorites'];
 const MAX_SLOTS = 3;
-
-type CurrentSoundUI = Omit<PersistedSound, 'backgroundImage'> & {
-    backgroundImage: ImageSourcePropType | null;
-};
 
 function softenToCutoff(soften: number) {
     const max = 20000;  // Hz
@@ -44,6 +39,8 @@ function softenToCutoff(soften: number) {
 
 export default function Main() {
     const theme = useTheme();
+    const isExpoGo = Constants.appOwnership === 'expo' && Platform.OS !== 'web';
+    const soundRefs = useRef<Audio.Sound[]>([]);
 
     // Enable LayoutAnimation on Android
     useEffect(() => {
@@ -71,26 +68,20 @@ export default function Main() {
     }, [isPlaying]);
 
     // Persisted slots & favorites
-    const [persistedSounds, setPersistedSounds] = usePersistedCurrentSounds();
+    const [persistedSounds, setPersistedSounds] = usePersistedScene();
     const [favorites, setFavorites] = usePersistedFavorites();
+    const [masterVolume, setMasterVolume] = useState<number>(1); // Global volume
 
-    // Map to your UI format
-    const currentSounds: CurrentSoundUI[] = persistedSounds.map(s => ({
+    const scene: SceneSound[] = persistedSounds.map(s => ({
         title: s.title,
         audioUrl: s.audioUrl,
-        settings: s.settings,
-        backgroundImage: s.backgroundImage ? { uri: s.backgroundImage } : null,
+        volume: s.settings.volume,
+        warmth: s.settings.warmth,
+        backgroundImage: s.backgroundImage
+            ? { uri: s.backgroundImage }
+            : null,
     }));
-
-    // Prepare TrackPlayer items
-    const trackList: TrackSound[] = persistedSounds.map(s => ({
-        id: s.title,
-        url: s.audioUrl,
-        title: s.title,
-    }));
-
-    // Global volume
-    const [masterVolume, setMasterVolume] = useState<number>(1);
+    useScenePlayer(scene, isPlaying, masterVolume);
 
     // Timer settings
     const [timerMinutes, setTimerMinutes] = useState<number>(180);
@@ -99,8 +90,6 @@ export default function Main() {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const tickRef = useRef<NodeJS.Timeout | null>(null);
 
-    // DRIVE PLAYBACK via TrackPlayer
-    useTrackPlayer(trackList, isPlaying, masterVolume);
 
     // Timer countdown & elapsed display
     useEffect(() => {
@@ -123,7 +112,6 @@ export default function Main() {
             if (tickRef.current) clearInterval(tickRef.current);
         };
     }, [isPlaying, timerMinutes]);
-
     // Modal states
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [settingsVisible, setSettingsVisible] = useState(false);
@@ -162,19 +150,22 @@ export default function Main() {
         }
     };
 
-    // Favorites toggle
-    const handleFavoriteToggle = (idx: number) => {
-        const title = filtered[idx].title;
+    // Toggle favorite by title
+    const handleFavoriteByTitle = (title: string) => {
         setFavorites(prev =>
-            prev.includes(title) ? prev.filter(f => f !== title) : [...prev, title]
+            prev.includes(title)
+                ? prev.filter(f => f !== title)
+                : [...prev, title]
         );
     };
 
-    // Add to slots
-    const handleSelect = (idx: number) => {
-        const sound = filtered[idx];
+    // Add to scene slots by title
+    const handleAddByTitle = (title: string) => {
+        const sound = filtered.find(s => s.title === title);
+        if (!sound) return;
         if (persistedSounds.length >= MAX_SLOTS) return;
-        if (persistedSounds.some(s => s.title === sound.title)) return;
+        if (persistedSounds.some(s => s.title === title)) return;
+
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setPersistedSounds(prev => [
             ...prev,
@@ -182,16 +173,28 @@ export default function Main() {
                 title: sound.title,
                 audioUrl: sound.localAudio,
                 backgroundImage: sound.localImage ?? undefined,
-                settings: { volume: 1, soften: 0, oscillate: false },
+                settings: { volume: 1, warmth: 0 },
             },
         ]);
+    };
+
+    // Preview (play/pause) by title
+    const handlePreviewByTitle = (title: string) => {
+        const idx = filtered.findIndex(s => s.title === title);
+        if (idx < 0) return;
+        handleCardPlay(idx, filtered[idx].localAudio);
     };
 
     // Remove slot
     const handleRemoveSlot = (idx: number) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setPersistedSounds(prev => prev.filter((_, i) => i !== idx));
+        const next = persistedSounds.filter((_, i) => i !== idx);
+        setPersistedSounds(next);
         setSelectedIndex(null);
+        if (next.length === 0 && isPlaying) {
+            // we’ve just removed the last slot, so pause
+            setIsPlaying(false);
+        }
     };
 
     // Filter + search + categories
@@ -205,6 +208,20 @@ export default function Main() {
             if (category === 'Favorites') return favorites.includes(s.title);
             return true;
         });
+
+    const previewTitle =
+        previewIndex !== null && previewIndex < filtered.length
+            ? filtered[previewIndex].title
+            : null;
+
+    const sections = Object.entries(
+        filtered.reduce<Record<string, typeof filtered>>((acc, sound) => {
+            const cat = sound.category ?? 'Others';
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(sound);
+            return acc;
+        }, {})
+    ).map(([title, data]) => ({ title, data }));
 
     if (loading) {
         return (
@@ -224,32 +241,21 @@ export default function Main() {
             />
 
             <View style={styles.wrapper}>
-                <FlatList
-                    data={filtered}
-                    keyExtractor={(_, i) => i.toString()}
-                    renderItem={({ item, index }) => (
-                        <Card
-                            title={item.title}
-                            backgroundImage={item.localImage ? { uri: item.localImage } : null}
-                            isFavorite={favorites.includes(item.title)}
-                            selected={currentSounds.some(cs => cs.title === item.title)}
-                            isPlaying={previewIndex === index}
-                            onFavoriteToggle={() => handleFavoriteToggle(index)}
-                            onPlayToggle={() => handleCardPlay(index, item.localAudio)}
-                            onPress={() => handleSelect(index)}
-                        />
-                    )}
-                    contentContainerStyle={styles.listContent}
-                    ListHeaderComponent={
-                        <Search
-                            value={searchText}
-                            onChangeText={setSearchText}
-                            placeholder="Search sounds…"
-                        />
-                    }
+                <Categories
+                    searchValue={searchText}
+                    onSearchChange={setSearchText}
+                    placeholder="Search sounds…"
+
+                    sections={sections}
+                    favorites={favorites}
+                    scene={scene}
+                    previewTitle={previewTitle}
+                    onFavoriteToggle={handleFavoriteByTitle}
+                    onAdd={handleAddByTitle}
+                    onPreview={handlePreviewByTitle}
                 />
 
-                {currentSounds.length > 0 && (
+                {scene.length > 0 && (
                     <LinearGradient
                         colors={['transparent', theme.background]}
                         start={[0, 0]}
@@ -259,8 +265,8 @@ export default function Main() {
                     />
                 )}
 
-                <CurrentSounds
-                    sounds={currentSounds}
+                <Scene
+                    sounds={scene}
                     onPress={i => {
                         setSelectedIndex(i);
                         setSettingsVisible(true);
@@ -269,7 +275,7 @@ export default function Main() {
                 />
             </View>
 
-            {currentSounds.length > 0 && (
+            {scene.length > 0 && (
                 <Controls
                     isPlaying={isPlaying}
                     onPlayPause={() => setIsPlaying(p => !p)}
@@ -281,10 +287,9 @@ export default function Main() {
 
             <SoundSettingsModal
                 visible={settingsVisible}
-                title={currentSounds[selectedIndex!]?.title ?? ''}
-                volume={currentSounds[selectedIndex!]?.settings.volume ?? 1}
-                soften={currentSounds[selectedIndex!]?.settings.soften ?? 0}
-                oscillate={currentSounds[selectedIndex!]?.settings.oscillate ?? false}
+                title={scene[selectedIndex!]?.title ?? ''}
+                volume={scene[selectedIndex!]?.volume ?? 1}
+                warmth={scene[selectedIndex!]?.warmth ?? 0}
                 onVolumeChange={v => {
                     const idx = selectedIndex!;
                     setPersistedSounds(prev => {
@@ -292,13 +297,29 @@ export default function Main() {
                         copy[idx].settings.volume = v;
                         return copy;
                     });
+
+                    if (Platform.OS !== 'web') {
+                        if (!isExpoGo) {
+                            const TrackPlayer = require('react-native-track-player').default;
+                            TrackPlayer.setVolume(masterVolume * v).catch(console.warn);
+                        } else {
+                            // — expo-av fallback —
+                            soundRefs.current.forEach(async (sound) => {
+                                try {
+                                    await sound.setVolumeAsync(masterVolume * v);
+                                } catch (e) {
+                                    console.warn('expo-av setVolumeAsync failed', e);
+                                }
+                            });
+                        }
+                    }
                 }}
-                onSoftenChange={v => {
+                onWarmthChange={v => {
                     const idx = selectedIndex!;
                     // update persisted settings
                     setPersistedSounds(prev => {
                         const copy = [...prev];
-                        copy[idx].settings.soften = v;
+                        copy[idx].settings.warmth = v;
                         return copy;
                     });
                     // if we’re running natively, tell the module
@@ -306,14 +327,6 @@ export default function Main() {
                         const cutoffFreq = softenToCutoff(v);
                         AudioFilterModule.setCutoff(cutoffFreq);
                     }
-                }}
-                onOscillateChange={on => {
-                    const idx = selectedIndex!;
-                    setPersistedSounds(prev => {
-                        const copy = [...prev];
-                        copy[idx].settings.oscillate = on;
-                        return copy;
-                    });
                 }}
                 onClose={() => setSettingsVisible(false)}
             />

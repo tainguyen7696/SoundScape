@@ -21,8 +21,8 @@ export interface CardProps {
     isPlaying?: boolean;
     selected?: boolean;
     onFavoriteToggle?: () => void;
-    onPlayToggle?: () => void;
-    onPress?: () => void; // for selection
+    onAdd?: () => void;
+    onPreview?: () => void;
 }
 
 const generateRandomColor = (): string => {
@@ -38,16 +38,15 @@ const Card: React.FC<CardProps> = ({
     backgroundImage = null,
     isFavorite = false,
     isPlaying = false,
-    selected = false,
     onFavoriteToggle,
-    onPlayToggle,
-    onPress,
+    onAdd,
+    onPreview,
 }) => {
     const theme = useTheme();
     const randomBg = useMemo(() => generateRandomColor(), []);
 
     const containerStyle: ViewStyle[] = [styles.card, { backgroundColor: randomBg }];
-    if (selected) {
+    if (isPlaying) {
         containerStyle.push({ borderWidth: 2, borderColor: theme.primary });
     }
 
@@ -58,7 +57,7 @@ const Card: React.FC<CardProps> = ({
         <TouchableOpacity
             style={styles.wrapper}
             activeOpacity={0.9}
-            onPress={onPress}
+            onPress={onPreview}
         >
             <ImageBackground {...imageProps} style={containerStyle} imageStyle={styles.image}>
                 <LinearGradient
@@ -82,17 +81,6 @@ const Card: React.FC<CardProps> = ({
                     </Text>
                     <View style={styles.icons}>
                         <TouchableOpacity
-                            onPress={onPlayToggle}
-                            style={styles.iconButton}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                            <FontAwesome
-                                name={isPlaying ? 'pause' : 'play'}
-                                size={20}
-                                color={isPlaying ? theme.primary : theme.text}
-                            />
-                        </TouchableOpacity>
-                        <TouchableOpacity
                             onPress={onFavoriteToggle}
                             style={styles.iconButton}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -101,6 +89,17 @@ const Card: React.FC<CardProps> = ({
                                 name={isFavorite ? 'heart' : 'heart-o'}
                                 size={20}
                                 color={isFavorite ? '#FF0000' : theme.text}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={onAdd}
+                            style={styles.iconButton}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                            <FontAwesome
+                                name="plus"
+                                size={20}
+                                color={theme.text}
                             />
                         </TouchableOpacity>
                     </View>
@@ -148,7 +147,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     iconButton: {
-        padding: 10,
+        padding: 16,
     },
     fadeLeft: {
         position: 'absolute',

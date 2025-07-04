@@ -1,4 +1,4 @@
-// src/components/CurrentSoundItem.tsx
+// src/components/SceneItem.tsx
 import React from 'react';
 import {
     TouchableOpacity,
@@ -6,22 +6,22 @@ import {
     Text,
     StyleSheet,
     ImageBackgroundProps,
+    ImageSourcePropType,
     ViewStyle,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useTheme } from '../theme';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export interface CurrentSoundItemProps {
+export interface SceneItemProps {
     title: string;
-    backgroundImage?: number | string | null;
-    /** the same color used by your Card when no image was provided */
+    backgroundImage?: ImageSourcePropType | null;
     backgroundColor?: string;
     onRemove: () => void;
     onPress?: () => void;
 }
 
-const CurrentSoundItem: React.FC<CurrentSoundItemProps> = ({
+const SceneItem: React.FC<SceneItemProps> = ({
     title,
     backgroundImage = null,
     backgroundColor,
@@ -39,7 +39,6 @@ const CurrentSoundItem: React.FC<CurrentSoundItemProps> = ({
     const imageProps: Partial<ImageBackgroundProps> = backgroundImage
         ? { source: backgroundImage as any }
         : {};
-
     return (
         <TouchableOpacity
             activeOpacity={0.8}
@@ -83,7 +82,7 @@ const CurrentSoundItem: React.FC<CurrentSoundItemProps> = ({
     );
 };
 
-export default CurrentSoundItem;
+export default SceneItem;
 
 const styles = StyleSheet.create({
     wrapper: {

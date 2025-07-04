@@ -6,11 +6,11 @@ import {
     useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import CurrentSoundItem from './CurrentSoundItem';
+import SceneItem from './SceneItem';
 import { useTheme } from '../theme';
 import type { CardProps } from './Card';
 
-export interface CurrentSoundsProps {
+export interface SceneProps {
     sounds: Omit<CardProps, 'onFavoriteToggle' | 'onPlay'>[];
     onPress: (index: number) => void;
     onRemove: (index: number) => void;
@@ -18,7 +18,7 @@ export interface CurrentSoundsProps {
 
 const MAX_ITEMS = 3;
 
-const CurrentSounds: React.FC<CurrentSoundsProps> = ({ sounds, onPress, onRemove }) => {
+const Scene: React.FC<SceneProps> = ({ sounds, onPress, onRemove }) => {
     const theme = useTheme();
     const { width: windowWidth } = useWindowDimensions();
 
@@ -31,7 +31,7 @@ const CurrentSounds: React.FC<CurrentSoundsProps> = ({ sounds, onPress, onRemove
             <View style={styles.row}>
                 {displaySounds.map((s, i) => (
                     <View key={i} style={[styles.itemWrapper, { width: windowWidth / count }]}>
-                        <CurrentSoundItem
+                        <SceneItem
                             title={s.title}
                             backgroundImage={s.backgroundImage}
                             onPress={() => onPress(i)}
@@ -44,7 +44,7 @@ const CurrentSounds: React.FC<CurrentSoundsProps> = ({ sounds, onPress, onRemove
     );
 };
 
-export default CurrentSounds;
+export default Scene;
 
 const styles = StyleSheet.create({
     container: {
