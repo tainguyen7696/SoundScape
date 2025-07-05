@@ -13,12 +13,14 @@ import {
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme';
+import { Feather } from '@expo/vector-icons';
 
 export interface CardProps {
     title: string;
     backgroundImage?: ImageSourcePropType | null;
     isFavorite?: boolean;
     isPlaying?: boolean;
+    isPremium?: boolean;    
     selected?: boolean;
     onFavoriteToggle?: () => void;
     onAdd?: () => void;
@@ -38,6 +40,7 @@ const Card: React.FC<CardProps> = ({
     backgroundImage = null,
     isFavorite = false,
     isPlaying = false,
+    isPremium = false,
     onFavoriteToggle,
     onAdd,
     onPreview,
@@ -80,6 +83,18 @@ const Card: React.FC<CardProps> = ({
                         {title}
                     </Text>
                     <View style={styles.icons}>
+                        {isPremium && (
+                            <TouchableOpacity
+                                style={styles.iconButton}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <FontAwesome
+                                    name="lock"
+                                    size={20}
+                                    color={theme.text}
+                                />
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity
                             onPress={onFavoriteToggle}
                             style={styles.iconButton}
@@ -96,7 +111,7 @@ const Card: React.FC<CardProps> = ({
                             style={styles.iconButton}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <FontAwesome
+                            <Feather
                                 name="plus"
                                 size={20}
                                 color={theme.text}
@@ -123,6 +138,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         justifyContent: 'center',
         position: 'relative',
+        marginHorizontal: 8,
     },
     image: {
         resizeMode: 'cover',
@@ -147,7 +163,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     iconButton: {
-        padding: 16,
+        padding: 12,
     },
     fadeLeft: {
         position: 'absolute',

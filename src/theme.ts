@@ -5,6 +5,7 @@ export type Theme = {
     background: string;
     cardBackground: string;
     text: string;
+    textDim: string;
     primary: string;
     overlay: string;
     controlBackground: string;
@@ -16,6 +17,7 @@ const LightTheme: Theme = {
     background: '#f9f9f9',
     cardBackground: '#e0e0e0',
     text: '#000000',
+    textDim: '#CCCCCC',
     primary: '#007bff',
     overlay: 'rgba(0,0,0,0.5)',
     controlBackground: '#ffffff',
@@ -27,6 +29,7 @@ const DarkTheme: Theme = {
     background: '#121212',
     cardBackground: '#1e1e1e',
     text: '#ffffff',
+    textDim: '#808080',
     primary: '#007bff',
     overlay: 'rgba(0,0,0,0.7)',
     controlBackground: '#1e1e1e',

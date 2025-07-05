@@ -59,10 +59,9 @@ async function uploadPair(baseName) {
 async function upsertRecord(baseName, urls) {
     const record = {
         title: baseName,
-        description: '',
         audio_url: urls.audio_url,
         background_image_url: urls.background_image_url,
-        tags: [],
+        category: '',
         is_premium: false,
         created_at: new Date().toISOString(),
     };

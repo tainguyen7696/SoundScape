@@ -73,7 +73,7 @@ const Categories: React.FC<CategoriesProps> = ({
                             { backgroundColor: theme.background },
                         ]}
                     >
-                        <Text style={[styles.headerText, { color: theme.text }]}>
+                        <Text style={[styles.headerText, { color: theme.textDim}]}>
                             {title}
                         </Text>
                     </View>
@@ -91,6 +91,7 @@ const Categories: React.FC<CategoriesProps> = ({
                             isFavorite={favorites.includes(item.title)}
                             isPlaying={isPlaying}
                             selected={isSelected}
+                            isPremium={item.isPremium}   
                             onFavoriteToggle={() => onFavoriteToggle(item.title)}
                             onPreview={() => onPreview(item.title)}
                             onAdd={() => onAdd(item.title)}
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
     },
     headerText: {
         fontSize: 18,
-        fontWeight: '700',
+        fontWeight: '300',
     },
     listContent: {
         paddingBottom: 120,
