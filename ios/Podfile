@@ -1,24 +1,23 @@
-# coding: utf-8
-Encoding.default_external = Encoding::UTF_8
-Encoding.default_internal = Encoding::UTF_8
-
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
-require 'xcodeproj'
-require 'json'
 
+require 'json'
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
 
 ENV['RCT_NEW_ARCH_ENABLED'] = '0' if podfile_properties['newArchEnabled'] == 'false'
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] = podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
 
 platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
-install! 'cocoapods', :deterministic_uuids => false
+install! 'cocoapods',
+  :deterministic_uuids => false
 
 prepare_react_native_project!
 
-target 'soundscape' do
+target 'Soundscape' do
   use_expo_modules!
+
+  # ← add this line to force CocoaPods to use your patched copy
+  pod 'RNCAsyncStorage', :path => '../node_modules/@react-native-async-storage/async-storage/ios'
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"]
@@ -35,94 +34,33 @@ target 'soundscape' do
 
   config = use_native_modules!(config_command)
 
-  if podfile_properties['ios.useFrameworks']
-    use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym
-  end
-  if ENV['USE_FRAMEWORKS']
-    use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym
-  end
+  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
+  use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
 
   use_react_native!(
     :path => config[:reactNativePath],
-    :hermes_enabled => podfile_properties['expo.jsEngine'].nil? || podfile_properties['expo.jsEngine'] == 'hermes',
+    :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',
     :app_path => "#{Pod::Config.instance.installation_root}/..",
-    :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false'
+    :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
 
   post_install do |installer|
-    # 1) Standard RN post-install
     react_native_post_install(
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
-      :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true'
+      :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
-    # 2) Prevent resource bundles being code-signed on Xcode 14+
-    installer.target_installation_results.pod_target_installation_results.each do |_pod, result|
-      result.resource_bundle_targets.each do |bundle|
-        bundle.build_configurations.each do |cfg|
-          cfg.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+    # This is necessary for Xcode 14, because it signs resource bundles by default
+    # when building for devices.
+    installer.target_installation_results.pod_target_installation_results
+      .each do |pod_name, target_installation_result|
+      target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
+        resource_bundle_target.build_configurations.each do |config|
+          config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
       end
-    end
-
-    # 3) Silence the Hermes “script has no outputs” warning
-    installer.pods_project.targets.each do |t|
-      next unless t.name == 'hermes-engine'
-      t.build_phases.each do |phase|
-        if phase.respond_to?(:name) && phase.name.include?('Replace Hermes')
-          phase.input_paths  = []
-          phase.output_paths = []
-        end
-      end
-    end
-
-    # 4) Patch SafeAreaContext C++ for the new StyleLength API
-    pods_root = installer.sandbox.root.to_s
-    cpp_file = File.join(
-      pods_root,
-      'react-native-safe-area-context',
-      'common', 'cpp',
-      'react', 'renderer',
-      'components', 'safeareacontext',
-      'RNCSafeAreaViewShadowNode.cpp'
-    )
-    if File.exist?(cpp_file)
-      content = File.read(cpp_file)
-      patched = content.gsub(/arg\.value\.unit,\s*arg\.value\.value/, 'arg.unit, arg.value')
-      File.write(cpp_file, patched)
-    end
-
-    # 5) Unify DEFINES_MODULE across conflicting pods
-    %w[expo-dev-menu Main ReactNativeCompatibles SafeAreaView Vendored].each do |name|
-      installer.pods_project.targets.select { |x| x.name == name }.each do |tgt|
-        tgt.build_configurations.each do |cfg|
-          cfg.build_settings['DEFINES_MODULE'] = 'YES'
-        end
-      end
-    end
-
-    # 6) Disable the “[Expo] Configure project” script phase entirely
-    project_path = File.join(installer.sandbox.root.parent.to_s, 'soundscape.xcodeproj')
-    if File.exist?(project_path)
-      project = Xcodeproj::Project.open(project_path)
-      project.targets.each do |tgt|
-        next unless tgt.name == 'soundscape'
-        tgt.build_phases.grep(Xcodeproj::Project::Object::PBXShellScriptBuildPhase).each do |phase|
-          if phase.name.include?('Configure project')
-            phase.shell_script = 'exit 0'
-          end
-        end
-      end
-      project.save
-    end
-
-    # 7) Strip Windows CRLF from the generated .xcode.env so `/bin/sh` won’t choke
-    xcode_env_path = File.join(installer.sandbox.root.parent.to_s, '.xcode.env')
-    if File.exist?(xcode_env_path)
-      txt = File.read(xcode_env_path)
-      File.write(xcode_env_path, txt.gsub("\r", ''))
     end
   end
 end

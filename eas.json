@@ -4,13 +4,45 @@
   },
   "build": {
     "development": {
-      "distribution": "internal",
       "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
       "android": {
         "buildType": "apk"
-      },
+      }
+    },
+    "preview": {
+      "distribution": "internal",
       "ios": {
         "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "ios": {
+        "buildConfiguration": "Release"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "testflight": {
+      "distribution": "store",
+      "ios": {
+        "buildConfiguration": "Release",
+        "simulator": false
+      }
+    }
+  },
+  "submit": {
+    "testflight": {
+      "ios": {
+        "ascAppId": "6748593755"
       }
     }
   }

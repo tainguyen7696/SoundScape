@@ -1,0 +1,64 @@
+diff --git a/node_modules/@react-native-async-storage/async-storage/RNCAsyncStorage.m b/node_modules/@react-native-async-storage/async-storage/RNCAsyncStorage.m
+new file mode 100644
+index 0000000..8d85d71
+--- /dev/null
++++ b/node_modules/@react-native-async-storage/async-storage/RNCAsyncStorage.m
+@@ -0,0 +1,58 @@
++#import "RNCAsyncStorage.h"
++#import <React/RCTLog.h>
++
++@implementation RNCAsyncStorage
++
++// … other methods …
++
++- (BOOL)_writeManifest:(NSArray<NSString *> *)ids withError:(NSError **)error {
++  // 1) Use Caches directory (no file‑protection lock)
++  NSURL *cacheDir = [[NSFileManager defaultManager]
++       URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask].firstObject;
++  NSURL *manifestURL = [cacheDir
++       URLByAppendingPathComponent:@"RCTAsyncLocalStorage_V1/manifest.json"];
++
++  // 2) Ensure the folder exists
++  NSString *folder = manifestURL.URLByDeletingLastPathComponent.path;
++  NSError *mkdirErr = nil;
++  if (![[NSFileManager defaultManager] fileExistsAtPath:folder]) {
++    [[NSFileManager defaultManager]
++      createDirectoryAtPath:folder
++      withIntermediateDirectories:YES
++      attributes:nil
++      error:&mkdirErr];
++    if (mkdirErr) {
++      RCTLogWarn(@"[AsyncStorage] Couldn't create manifest folder: %@", mkdirErr);
++    }
++  }
++
++  // 3) Serialize JSON
++  NSData *data = [NSJSONSerialization dataWithJSONObject:ids
++                                                 options:0
++                                                   error:error];
++  if (!data) {
++    RCTLogError(@"[AsyncStorage] JSON serialization failed: %@", *error);
++    return NO;
++  }
++
++  // 4) Try the atomic write, but catch any Obj‑C exception
++  BOOL ok = NO;
++  @try {
++    ok = [data writeToURL:manifestURL
++                 options:NSDataWritingAtomic
++                   error:error];
++    if (!ok) {
++      RCTLogError(@"[AsyncStorage] Write failed: %@", *error);
++    }
++  }
++  @catch (NSException *ex) {
++    RCTLogError(@"[AsyncStorage] Exception writing manifest: %@", ex);
++    ok = NO;
++  }
++
++  return ok;
++}
++
++// … other methods …
++
++@end
