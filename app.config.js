@@ -18,7 +18,7 @@ export default ({ config }) => {
     config.ios = {
         ...(config.ios ?? {}),
         bundleIdentifier: "com.tsglobal.soundscape",
-        buildNumber: "9",
+        buildNumber: "10",
         infoPlist: {
             ITSAppUsesNonExemptEncryption: false,
             NSPhotoLibraryUsageDescription: "We need access to your photo library so you can select and import images into your scenes.",

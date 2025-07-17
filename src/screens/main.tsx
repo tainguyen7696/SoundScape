@@ -19,6 +19,7 @@ import Scene from '../components/Scene';
 import Controls from '../components/Controls';
 import SoundSettingsModal from '../components/SoundSettingsModal';
 import TimerSettingsModal from '../components/TimerSettingsModal';
+import SettingsModal from '../components/SettingsModal';
 import { useTheme } from '../theme';
 import { useScenePlayer, SceneSound } from '../hooks/useScenePlayer';
 import Constants from 'expo-constants';
@@ -114,6 +115,7 @@ export default function Main() {
     }, [isPlaying, timerMinutes]);
     // Modal states
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const [soundSettingsVisible, setSoundSettingsVisible] = useState(false);
     const [settingsVisible, setSettingsVisible] = useState(false);
     const [timerVisible, setTimerVisible] = useState(false);
 
@@ -237,7 +239,7 @@ export default function Main() {
                 categories={categories}
                 selectedCategory={category}
                 onCategoryChange={setCategory}
-                onSettingsPress={() => { }}
+                onSettingsPress={() => setSettingsVisible(true)}
             />
 
             <View style={styles.wrapper}>
@@ -269,7 +271,7 @@ export default function Main() {
                     sounds={scene}
                     onPress={i => {
                         setSelectedIndex(i);
-                        setSettingsVisible(true);
+                        setSoundSettingsVisible(true);
                     }}
                     onRemove={handleRemoveSlot}
                 />
@@ -286,7 +288,7 @@ export default function Main() {
             )}
 
             <SoundSettingsModal
-                visible={settingsVisible}
+                visible={soundSettingsVisible}
                 title={scene[selectedIndex!]?.title ?? ''}
                 volume={scene[selectedIndex!]?.volume ?? 1}
                 warmth={scene[selectedIndex!]?.warmth ?? 0}
@@ -328,7 +330,7 @@ export default function Main() {
                         AudioFilterModule.setCutoff(cutoffFreq);
                     }
                 }}
-                onClose={() => setSettingsVisible(false)}
+                onClose={() => setSoundSettingsVisible(false)}
             />
 
             <TimerSettingsModal
@@ -336,6 +338,13 @@ export default function Main() {
                 initialMinutes={timerMinutes}
                 onTimeChange={mins => setTimerMinutes(mins)}
                 onClose={() => setTimerVisible(false)}
+            />
+
+            <SettingsModal
+                visible={settingsVisible}
+                onClose={() => setSettingsVisible(false)}
+                onSuggestSound={() => {/* your handler */ }}
+                onRestorePurchases={() => {/* your handler */ }}
             />
         </View>
     );
