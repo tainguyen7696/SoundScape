@@ -10,6 +10,7 @@ import {
     UIManager,
     LayoutAnimation,
     ImageSourcePropType,
+    Linking,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,6 +31,7 @@ import { useCachedSounds } from '../hooks/useCachedSounds';
 const { AudioFilterModule } = NativeModules;
 const categories = ['All sounds', 'Premium', 'Recently added', 'Favorites'];
 const MAX_SLOTS = 3;
+const SUGGEST_URL = 'https://your-site.com/suggest-sound';
 
 function softenToCutoff(soften: number) {
     const max = 20000;  // Hz
@@ -199,6 +201,15 @@ export default function Main() {
         }
     };
 
+    const handleSuggestSound = async () => {
+        const supported = await Linking.canOpenURL(SUGGEST_URL);
+        if (supported) {
+            Linking.openURL(SUGGEST_URL);
+        } else {
+            console.warn(`Don't know how to open URI: ${SUGGEST_URL}`);
+        }
+    };
+
     // Filter + search + categories
     const [category, setCategory] = useState(categories[0]);
     const [searchText, setSearchText] = useState('');
@@ -343,7 +354,7 @@ export default function Main() {
             <SettingsModal
                 visible={settingsVisible}
                 onClose={() => setSettingsVisible(false)}
-                onSuggestSound={() => {/* your handler */ }}
+                onSuggestSound={() => { handleSuggestSound }}
                 onRestorePurchases={() => {/* your handler */ }}
             />
         </View>
