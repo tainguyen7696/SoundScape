@@ -10,6 +10,7 @@ import {
     ViewStyle,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../theme';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -70,7 +71,7 @@ const SceneItem: React.FC<SceneItemProps> = ({
                     style={styles.removeIcon}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                    <FontAwesome name="times" size={14} color={theme.text} />
+                    <Feather name="x" size={24} color={theme.text} />
                 </TouchableOpacity>
 
                 {/* Title at bottom-left */}

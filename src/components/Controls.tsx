@@ -3,6 +3,7 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { FontAwesome } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../theme';
 
 export interface ControlsProps {
@@ -25,15 +26,11 @@ const Controls: React.FC<ControlsProps> = ({
     return (
         <View style={[styles.container, { backgroundColor: theme.controlBackground }]}>
             <TouchableOpacity
-                style={styles.playButton}
-                onPress={onPlayPause}
+                style={styles.iconButton}
+                onPress={onTimerPress}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-                <FontAwesome
-                    name={isPlaying ? 'pause' : 'play'}
-                    size={24}
-                    color={theme.text}
-                />
+                <Feather name="clock" size={24} color={theme.text} />
             </TouchableOpacity>
 
             <Slider
@@ -48,12 +45,17 @@ const Controls: React.FC<ControlsProps> = ({
             />
 
             <TouchableOpacity
-                style={styles.iconButton}
-                onPress={onTimerPress}
+                style={styles.playButton}
+                onPress={onPlayPause}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-                <FontAwesome name="clock-o" size={20} color={theme.text} />
+                <FontAwesome
+                    name={isPlaying ? 'pause' : 'play'}
+                    size={24}
+                    color={theme.text}
+                />
             </TouchableOpacity>
+
         </View>
     );
 };
@@ -76,12 +78,13 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+        marginLeft: 12,
     },
     slider: {
         flex: 1,
         height: 40,
-        marginRight: 12,
+        marginRight: 6,
+        marginLeft: 12,
     },
     iconButton: {
         padding: 8,

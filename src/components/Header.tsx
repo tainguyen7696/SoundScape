@@ -9,6 +9,7 @@ import {
     TouchableWithoutFeedback,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../theme';
 
 export interface HeaderProps {
@@ -38,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({
                 <Text style={[styles.dropdownText, { color: theme.text }]}>
                     {selectedCategory}
                 </Text>
-                <FontAwesome name="chevron-down" size={16} color={theme.text} />
+                <Feather name="chevron-down" size={24} color={theme.text} />
             </TouchableOpacity>
 
             <TouchableOpacity onPress={onSettingsPress}>

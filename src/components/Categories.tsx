@@ -79,8 +79,7 @@ const Categories: React.FC<CategoriesProps> = ({
                     </View>
                 )}
                 renderItem={({ item }) => {
-                    const isPlaying = previewTitle === item.title;
-                    const isSelected = scene.some(s => s.title === item.title);
+                    const inScene = scene.some(s => s.title === item.title);
 
                     return (
                         <Card
@@ -89,8 +88,7 @@ const Categories: React.FC<CategoriesProps> = ({
                                 item.localImage ? { uri: item.localImage } : null
                             }
                             isFavorite={favorites.includes(item.title)}
-                            isPlaying={isPlaying}
-                            selected={isSelected}
+                            isPlaying={inScene}
                             isPremium={item.isPremium}   
                             onFavoriteToggle={() => onFavoriteToggle(item.title)}
                             onPreview={() => onPreview(item.title)}

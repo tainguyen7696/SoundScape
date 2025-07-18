@@ -20,8 +20,7 @@ export interface CardProps {
     backgroundImage?: ImageSourcePropType | null;
     isFavorite?: boolean;
     isPlaying?: boolean;
-    isPremium?: boolean;    
-    selected?: boolean;
+    isPremium?: boolean;
     onFavoriteToggle?: () => void;
     onAdd?: () => void;
     onPreview?: () => void;
@@ -48,7 +47,11 @@ const Card: React.FC<CardProps> = ({
     const theme = useTheme();
     const randomBg = useMemo(() => generateRandomColor(), []);
 
-    const containerStyle: ViewStyle[] = [styles.card, { backgroundColor: randomBg }];
+    const containerStyle: ViewStyle[] = [
+        styles.card,
+        { backgroundColor: theme.primary },
+    ];
+
     if (isPlaying) {
         containerStyle.push({ borderWidth: 2, borderColor: theme.primary });
     }

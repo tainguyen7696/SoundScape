@@ -44,6 +44,7 @@ export default function Main() {
     const theme = useTheme();
     const isExpoGo = Constants.appOwnership === 'expo' && Platform.OS !== 'web';
     const soundRefs = useRef<Audio.Sound[]>([]);
+    const currentIndexRef = useRef(-1);
 
     // Enable LayoutAnimation on Android
     useEffect(() => {
@@ -61,14 +62,6 @@ export default function Main() {
 
     // Global play
     const [isPlaying, setIsPlaying] = useState(false);
-    useEffect(() => {
-        if (isPlaying && previewRef.current) {
-            previewRef.current.stopAsync();
-            previewRef.current.unloadAsync();
-            previewRef.current = null;
-            setPreviewIndex(null);
-        }
-    }, [isPlaying]);
 
     // Persisted slots & favorites
     const [persistedSounds, setPersistedSounds] = usePersistedScene();
@@ -93,6 +86,10 @@ export default function Main() {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const tickRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Reset the slot pointer when the scene is cleared
+    useEffect(() => {
+        currentIndexRef.current = persistedSounds.length - 1;
+    }, [persistedSounds]);
 
     // Timer countdown & elapsed display
     useEffect(() => {
@@ -121,39 +118,6 @@ export default function Main() {
     const [settingsVisible, setSettingsVisible] = useState(false);
     const [timerVisible, setTimerVisible] = useState(false);
 
-    // Cleanup preview
-    useEffect(() => {
-        return () => {
-            previewRef.current?.stopAsync();
-            previewRef.current?.unloadAsync();
-        };
-    }, []);
-
-    // Card preview play/pause
-    const handleCardPlay = async (idx: number, audioUrl: string) => {
-        if (isPlaying) setIsPlaying(false);
-        if (previewIndex === idx) {
-            await previewRef.current?.stopAsync();
-            await previewRef.current?.unloadAsync();
-            previewRef.current = null;
-            setPreviewIndex(null);
-            return;
-        }
-        if (previewRef.current) {
-            await previewRef.current.stopAsync();
-            await previewRef.current.unloadAsync();
-        }
-        const sound = new Audio.Sound();
-        try {
-            await sound.loadAsync({ uri: audioUrl });
-            await sound.playAsync();
-            previewRef.current = sound;
-            setPreviewIndex(idx);
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
     // Toggle favorite by title
     const handleFavoriteByTitle = (title: string) => {
         setFavorites(prev =>
@@ -162,31 +126,62 @@ export default function Main() {
                 : [...prev, title]
         );
     };
-
-    // Add to scene slots by title
+    // Add to scene slots by title, always writing into currentIndexRef, then advance it
     const handleAddByTitle = (title: string) => {
         const sound = filtered.find(s => s.title === title);
         if (!sound) return;
-        if (persistedSounds.length >= MAX_SLOTS) return;
-        if (persistedSounds.some(s => s.title === title)) return;
+
+        const newEntry: PersistedSound = {
+            title: sound.title,
+            audioUrl: sound.localAudio,
+            backgroundImage: sound.localImage ?? undefined,
+            settings: { volume: 1, warmth: 0 },
+        };
 
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setPersistedSounds(prev => [
-            ...prev,
-            {
-                title: sound.title,
-                audioUrl: sound.localAudio,
-                backgroundImage: sound.localImage ?? undefined,
-                settings: { volume: 1, warmth: 0 },
-            },
-        ]);
+
+        setPersistedSounds(prev => {
+            const copy = [...prev];
+            const idx = currentIndexRef.current;
+
+            if (copy.length < MAX_SLOTS) {
+                copy.push(newEntry);
+            }
+
+            return copy;
+        });
+
+        setIsPlaying(true);
     };
 
-    // Preview (play/pause) by title
-    const handlePreviewByTitle = (title: string) => {
-        const idx = filtered.findIndex(s => s.title === title);
-        if (idx < 0) return;
-        handleCardPlay(idx, filtered[idx].localAudio);
+    const handleReplaceCurrent = (title: string) => {
+        if (persistedSounds.length === 0) {
+            handleAddByTitle(title);
+            return;
+        }
+        const sound = filtered.find(s => s.title === title);
+        if (!sound) return;
+
+        const newEntry: PersistedSound = {
+            title: sound.title,
+            audioUrl: sound.localAudio,
+            backgroundImage: sound.localImage ?? undefined,
+            settings: { volume: 1, warmth: 0 },
+        };
+
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
+        setPersistedSounds(prev => {
+            const copy = [...prev];
+            const idx = currentIndexRef.current;
+            // Only replace if that slot exists
+            if (idx < copy.length) {
+                copy[idx] = newEntry;
+            }
+            return copy;
+        });
+
+        setIsPlaying(true);
     };
 
     // Remove slot
@@ -265,7 +260,7 @@ export default function Main() {
                     previewTitle={previewTitle}
                     onFavoriteToggle={handleFavoriteByTitle}
                     onAdd={handleAddByTitle}
-                    onPreview={handlePreviewByTitle}
+                    onPreview={handleReplaceCurrent}
                 />
 
                 {scene.length > 0 && (
