@@ -4,13 +4,13 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, View, StyleSheet, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
+import { NativeModules } from 'react-native';
 import Main from './src/screens/main';
 import { useTheme } from './src/theme';
 
 export default function App() {
     const theme = useTheme();
-
+    console.log("AudioFilterModule:", NativeModules.AudioFilterModule);
     return (
         <SafeAreaProvider>
                 <View
