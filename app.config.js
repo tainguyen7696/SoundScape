@@ -2,20 +2,15 @@
 import 'dotenv/config';
 
 export default ({ config }) => {
-    // 0️⃣ App version (CFBundleShortVersionString)
     config.version = "1.0.0";
-
-    // 1️⃣ Basic Expo config
     config.name = "Soundscape";
     config.slug = "soundscape";
 
-    // 2️⃣ Link your EAS project
     config.extra = {
         ...(config.extra ?? {}),
         eas: { projectId: "69b2ff50-b5e1-4531-a72f-7f1d0c78c34b" },
     };
 
-    // 3️⃣ iOS-specific settings
     config.ios = {
         ...(config.ios ?? {}),
         bundleIdentifier: "com.tsglobal.soundscape",
