@@ -43,17 +43,6 @@ export default ({ config }) => {
         plugins.push("expo-dev-client");
     }
 
-    // React Native Firebase core & Crashlytics
-    plugins.push("@react-native-firebase/app");
-    plugins.push([
-        "@react-native-firebase/crashlytics",
-        {
-            // optional: enable debug & manual collection
-            crashlytics_debug_enabled: true,
-            crashlytics_auto_collection_enabled: false,
-        },
-    ]);
-
     config.plugins = plugins;
 
     return config;
