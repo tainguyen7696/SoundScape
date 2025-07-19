@@ -1,25 +1,10 @@
 @echo off
 REM ====================================================
-REM build_and_submit.bat
-REM Automates EAS build + submit for iOS (TestFlight)
-REM Pauses on error to let you inspect logs.
+REM submit ios
+REM Automates:
+REM   1) EAS submit to TestFlight
+REM Pauses on error so you can inspect logs.
 REM ====================================================
-
-SETLOCAL
-
-REM === iOS Build ===
-echo.
-echo ========================================
-echo Building iOS (profile: testflight)...
-echo ========================================
-eas build --platform ios --profile testflight --non-interactive
-IF ERRORLEVEL 1 (
-  echo.
-  echo [ERROR] iOS build failed. Aborting.
-  pause
-  ENDLOCAL
-  EXIT /B 1
-)
 
 REM === iOS Submit ===
 echo.
@@ -37,7 +22,7 @@ IF ERRORLEVEL 1 (
 
 echo.
 echo ========================================
-echo ✅ All builds and submissions succeeded!
+echo ✅ All steps succeeded!
 echo ========================================
 ENDLOCAL
 pause

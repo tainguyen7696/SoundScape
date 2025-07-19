@@ -1,8 +1,13 @@
+// index.ts
+import crashlytics from '@react-native-firebase/crashlytics';
 import { registerRootComponent } from 'expo';
 
 import App from './App';
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
+// Log a startup breadcrumb
+crashlytics().log('🚀 App starting');
+
+// (Optionally) force a crash to verify Crashlytics is wired up:
+// crashlytics().crash();
+
 registerRootComponent(App);
