@@ -31,9 +31,7 @@ export default ({ config }) => {
         },
     };
 
-    // 4️⃣ Plugins (including Firebase Crashlytics)
     const plugins = [
-        // your existing plugins
         "./plugins/expo-audio-filter-plugin.cjs",
         "./expo-plugins/with-patch-async-storage.cjs",
     ];

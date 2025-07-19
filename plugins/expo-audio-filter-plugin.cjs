@@ -7,14 +7,18 @@ const fs = require('fs-extra');
 const path = require('path');
 
 module.exports = function expoAudioFilterPlugin(config) {
-    // 1️⃣ Copy the Swift + Obj‑C source files into ios/
+    // 1️⃣ Copy your Swift + Obj‑C source files into the generated ios/ folder
     config = withDangerousMod(config, {
         platform: 'ios',
-        mod: async ({ modResults, modRequest }) => {
+        mod: async ({ modRequest, modResults }) => {
             const projectRoot = modRequest.projectRoot;
             const iosDir = path.join(projectRoot, 'ios');
             const srcDir = path.join(projectRoot, 'plugins', 'AudioFilter');
 
+            // ensure the ios/ folder exists
+            await fs.ensureDir(iosDir);
+
+            // copy in the files
             await fs.copy(
                 path.join(srcDir, 'AudioFilterModule.swift'),
                 path.join(iosDir, 'AudioFilterModule.swift')
@@ -28,26 +32,17 @@ module.exports = function expoAudioFilterPlugin(config) {
         },
     });
 
-    // 2️⃣ Tell Xcode about those files so they actually get compiled
+    // 2️⃣ Tell Xcode’s project to compile those files
     config = withXcodeProject(config, {
-        mod: (config) => {
-            const pbxProject = config.modResults;
-            // Grab the first app target (usually your only one)
-            const targetUuid = pbxProject.getFirstTarget().uuid;
+        mod: (ctx) => {
+            const project = ctx.modResults;
+            const target = project.getFirstTarget().uuid;
 
-            // Paths here are relative to ios/ in your project
-            pbxProject.addSourceFile(
-                'AudioFilterModule.swift',
-        /* group */ null,
-                targetUuid
-            );
-            pbxProject.addSourceFile(
-                'AudioFilterModuleBridge.m',
-        /* group */ null,
-                targetUuid
-            );
+            // these paths are relative to ios/
+            project.addSourceFile('AudioFilterModule.swift', null, target);
+            project.addSourceFile('AudioFilterModuleBridge.m', null, target);
 
-            return config;
+            return ctx;
         },
     });
 
