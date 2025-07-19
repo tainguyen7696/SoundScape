@@ -15,7 +15,7 @@ echo ========================================
 echo Bumping iOS build number...
 echo ========================================
 REM assumes increment-build-number.cjs sits next to this .bat
-node "%~dp0increment-ios-build.js"
+node "%~dp0increment-build-number.cjs"
 IF ERRORLEVEL 1 (
   echo.
   echo [ERROR] build-number bump failed. Aborting.

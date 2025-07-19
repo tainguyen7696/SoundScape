@@ -19,7 +19,7 @@ export default ({ config }) => {
     config.ios = {
         ...(config.ios ?? {}),
         bundleIdentifier: "com.tsglobal.soundscape",
-        buildNumber: "8", // this will be overridden by EAS_BUILD_NUMBER if you choose
+        buildNumber: "10",
         infoPlist: {
             ITSAppUsesNonExemptEncryption: false,
             NSPhotoLibraryUsageDescription:
