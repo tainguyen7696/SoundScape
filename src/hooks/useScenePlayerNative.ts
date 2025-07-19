@@ -31,6 +31,7 @@ export function useScenePlayerNative(
 ) {
     // 1) Play or stop all sounds
     useEffect(() => {
+        if (AudioFilterModule == null) return;
         if (!isPlaying || sounds.length === 0) {
             AudioFilterModule.stop();
             return;
@@ -48,6 +49,7 @@ export function useScenePlayerNative(
 
     // 2) Update low‑pass cutoff whenever warmth changes
     useEffect(() => {
+        if (AudioFilterModule == null) return;
         if (!isPlaying || sounds.length === 0) return;
         const avgWarmth = sounds.reduce((sum, s) => sum + s.warmth, 0) / sounds.length;
         const cutoff = softenToCutoff(avgWarmth);
@@ -56,6 +58,7 @@ export function useScenePlayerNative(
 
     // 3) Update volume-only on masterVolume or individual volume change
     useEffect(() => {
+        if (AudioFilterModule == null) return;
         if (!isPlaying || sounds.length === 0) return;
         for (let layer of sounds) {
             const vol = masterVolume * layer.volume;
