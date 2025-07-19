@@ -14,7 +14,7 @@ export default ({ config }) => {
     config.ios = {
         ...(config.ios ?? {}),
         bundleIdentifier: "com.tsglobal.soundscape",
-        buildNumber: "11",
+        buildNumber: "12",
         infoPlist: {
             ITSAppUsesNonExemptEncryption: false,
             NSPhotoLibraryUsageDescription:
@@ -28,7 +28,7 @@ export default ({ config }) => {
 
     const plugins = [
         "./plugins/expo-audio-filter-plugin.cjs",
-        "./expo-plugins/with-patch-async-storage.cjs",
+        "./plugins/with-patch-async-storage.cjs",
     ];
 
     // expo-dev-client in development
